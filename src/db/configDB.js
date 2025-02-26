@@ -1,0 +1,26 @@
+import dotenv from 'dotenv';
+import pg from 'pg';
+dotenv.config();
+const uri = {
+  connectionString: process.env.DATABASE_URI,
+  ssl: { rejectUnauthorized: false },
+  connectionTimeoutMillis: 10000, // Tiempo de espera para la conexión (5 segundos)
+  idleTimeoutMillis: 30000, // Tiempo de espera para conexiones inactivas (30 segundos)
+};
+export const pool = new pg.Pool(uri); // Pool espera un objeto
+
+export async function checkConnection() {
+  try {
+    await pool.query('SELECT 1');
+    console.log('Conexión a la base de datos verificada.');
+  } catch (error) {
+    console.error('Error al verificar la conexión a la base de datos:', error);
+    throw error;
+  }
+}
+
+// pool.on('error', (err) => {
+  // console.error('Unexpected error on idle client', err);
+  // Termina la aplicación si hay un error grave
+  // process.exit(-1);
+// });
