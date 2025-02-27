@@ -10,6 +10,7 @@ import routes from './routes/index.js';
 import {
   tblAccountTypes,
   tblCurrencies,
+  tblMovementTypes,
   tblUserRoles,
 } from './db/populateDB.js';
 
@@ -33,12 +34,10 @@ app.disable('x-powered-by');
 const PORT = parseInt(process.env.PORT ?? '5000');
 
 //Middlewares
-app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -70,15 +69,16 @@ app.use(cookieParser());
 console.log('message', 'Hola Mundo');
 
 //------------------
-// Función para inicializar la base de datos
+//Dtabase initialization.  Función para inicializar la base de datos
 async function initializeDatabase() {
   try {
     console.log('Verificando si la base de datos necesita inicialización...');
 
-    // Initialize currencies table
+    // Initialize tables with catalogued field attributes
     await tblCurrencies();
     await tblUserRoles();
     await tblAccountTypes();
+    await tblMovementTypes();
 
     console.log('Base de datos inicializada correctamente.');
   } catch (error) {
@@ -90,7 +90,7 @@ async function initializeDatabase() {
   }
 }
 
-// Inicializar la base de datos y luego iniciar el servidor
+// Server starts here. Inicializar la base de datos y luego iniciar el servidor
 
 await checkConnection();
 await initializeDatabase()
@@ -101,7 +101,7 @@ await initializeDatabase()
     });
   })
   .catch((error) => {
-    console.error('Error crítico durante la inicialización:', error);
+    console.error('Critical error during initialization:', error);
     process.exit(1); // Salir del proceso si hay un error crítico
   });
 
@@ -115,19 +115,27 @@ pool.on('error', (err) => {
 app.use('/api', routes);
 
 //------------------
-//verificar donde o cuando cerrar la conexion con la base de datos
-// app.use('*', (req, res) => {
-//   res.status(404).json({ error: '404', message: 'not found' });
-// });
+//response to undefined routes request
+app.use('*', (req, res) => {
+  res.status(404).json({ error: '404', message: 'not found' });
+});
 
 //message error handling
 // app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
-app.use((err, req, res) => {
-  console.log('error handled, response ');
+app.use((err, req, response, next) => {
+  console.error('error handled response ', response, err);
   const errorStatus = err.status || 500;
-  res.status(errorStatus).json({
-    message: err.message || 'there was an error',
+  response.status(errorStatus).json({
+    message: err.message || 'There was an error',
     status: errorStatus,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('Shutting down gracefully...');
+  pool.end(() => {
+    console.log('Database pool closed.');
+    process.exit(0);
   });
 });
