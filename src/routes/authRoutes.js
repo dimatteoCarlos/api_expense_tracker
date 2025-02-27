@@ -10,3 +10,5 @@ router.post('/sign-up', signUpUser); //register
 router.post('/sign-in', signInUser); // login
 
 export default router;
+
+

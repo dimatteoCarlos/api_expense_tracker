@@ -39,7 +39,9 @@ SELECT  account_id, account_name
     WHERE user_id = $1
     ORDER BY account_id ASC
 
--- get all user account info by user id and account id, 
+-- get all user accounta info by user id and account name,
+SELECT * FROM users_accounts WHERE user_id = $1 AND account_name ILIKE '%$2%' ORDER BY account_name
+
 
 -- get all user sources income by user id
 
