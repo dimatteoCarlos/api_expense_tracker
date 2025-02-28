@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import pg from 'pg';
+import pc from 'picocolors'
 dotenv.config();
 
 const uri = {
@@ -14,9 +15,9 @@ export const pool = new pg.Pool(uri); // Pool espera un objeto
 export async function checkConnection() {
   try {
     await pool.query('SELECT 1');
-    console.log('Conexión a la base de datos verificada.'); //Data base connection verifyid
+    console.log(pc.italic(pc.yellowBright('Conexión a la base de datos verificada.'))); //Data base connection verifyid
   } catch (error) {
-    console.error('Error al verificar la conexión a la base de datos:', error); //Error when connecting to data base. Connection not verifyied
+    console.error(pc.red('Error al verificar la conexión a la base de datos:', error)); //Error when connecting to data base. Connection not verifyied
     throw error;
   }
 }

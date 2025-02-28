@@ -1,4 +1,5 @@
 import { pool } from './configDB.js';
+import pc from 'picocolors';
 
 function isValidTableName(tableName) {
   return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName); // Solo permite nombres de tablas válidos
@@ -16,7 +17,7 @@ async function tableExists(tableName) {
     );
   `;
   const result = await pool.query(queryText);
-  // console.log(tableName, ' existe? ', result.rows[0].exists);
+  console.log(pc.magentaBright(tableName), ' exists? ', result.rows[0].exists);
   return result.rows[0].exists; // Returns true or false
 }
 
@@ -58,7 +59,7 @@ export async function tblCurrencies() {
     //is it already populated
     const isPopulated = await isTablePopulated('currencies', 2);
     if (isPopulated) {
-      // console.log('currencies table is already populated.');
+      console.log('currencies table is already populated.');
       return;
     }
 
@@ -85,7 +86,7 @@ export async function tblCurrencies() {
     error // Revertir la transacción en caso de error
   ) {
     await pool.query('ROLLBACK');
-    console.error('Error inserting tuples:', error);
+    console.error(pc.orange('Error inserting tuples:', error));
     throw error;
   }
 }
@@ -110,7 +111,7 @@ export async function tblUserRoles() {
 
     const exists = await tableExists(tblName);
     if (!exists) {
-      // console.log(`\" ${tblName}\" table does not exist. Creating it...`);
+      console.log(pc.cyan(`\" ${tblName}\" table does not exist. Creating it...`));
       const createQuery = `CREATE TABLE user_roles(user_role_id SERIAL PRIMARY KEY  NOT NULL, user_role_name VARCHAR(15) NOT NULL CHECK (user_role_name IN ('user', 'admin', 'superadmin') ) )`;
       await pool.query(createQuery);
     }
@@ -118,7 +119,7 @@ export async function tblUserRoles() {
     //is it already populated
     const isPopulated = await isTablePopulated(tblName, minCount);
     if (isPopulated) {
-      // console.log(`${tblName} table is already populated.`);
+      console.log(pc.cyan(`${tblName} table is already populated.`));
       return;
     }
 
@@ -130,22 +131,21 @@ export async function tblUserRoles() {
       const queryText = `INSERT INTO user_roles(user_role_id, user_role_name) VALUES ($1,$2)`;
       const values = [role.user_role_id, role.user_role_name];
       await pool.query(queryText, values);
-      // console.log('inserted: user_role', role.user_role_name);
+      console.log(pc.green('inserted: user_role', role.user_role_name));
     }
 
     //confirm transaction
     await pool.query('COMMIT');
-    console.log('All tuples inserted successfully.');
+    console.log(pc.yellow('All tuples inserted successfully.'));
   } catch (
     error // Revertir la transacción en caso de error
   ) {
     await pool.query('ROLLBACK');
-    console.error('Error inserting tuples:', tblName, error);
+    console.error(pc.red('Error inserting tuples:', tblName, error));
   }
 }
 
 // tblUserRoles()
-
 //--
 //accountTypes
 export async function tblAccountTypes() {
@@ -160,7 +160,7 @@ export async function tblAccountTypes() {
     { account_type_id: 8, account_type_name: 'cash' },
   ];
   const tblName = 'account_types';
-  const minCount = accountTypeValues.length-1;
+  const minCount = accountTypeValues.length - 1;
 
   try {
     //verify if table exists
@@ -170,7 +170,7 @@ export async function tblAccountTypes() {
     const exists = await tableExists(tblName);
 
     if (!exists) {
-      console.log(`${tblName} table does not exist. Creating it...'`);
+      console.log(pc.yellow`${tblName} table does not exist. Creating it...'`);
       const createQuery = `CREATE TABLE account_types (
         account_type_id INT PRIMARY KEY NOT NULL,
         account_type_name VARCHAR(50) NOT NULL 
@@ -181,7 +181,7 @@ export async function tblAccountTypes() {
     //is it already populated
     const isPopulated = await isTablePopulated(tblName, minCount);
     if (isPopulated) {
-      // console.log(`${tblName} table is already populated.`);
+      console.log(pc.yellowBright(`${tblName} table is already populated.`));
       return;
     }
 
@@ -193,12 +193,12 @@ export async function tblAccountTypes() {
       account_type_name) VALUES ($1,$2)`;
       const values = [type.account_type_id, type.account_type_name];
       await pool.query(queryText, values);
-      console.log(`inserted: ${tblName}, ${type.account_type_name}`);
+      console.log(pc.orange(`inserted: ${tblName}, ${type.account_type_name}`));
     }
 
     //confirm transaction
     await pool.query('COMMIT');
-    console.log('All tuples inserted successfully.');
+    console.log(pc.yellow('All tuples inserted successfully.'));
   } catch (
     error // Revertir la transacción en caso de error
   ) {
@@ -230,7 +230,9 @@ export async function tblMovementTypes() {
     const exists = await tableExists(tblName);
 
     if (!exists) {
-      console.log(`${tblName} table does not exist. Creating it...'`);
+      console.log(
+        pc.purple(`${tblName} table does not exist. Creating it...'`)
+      );
       const createQuery = `CREATE TABLE movement_types (
         movement_type_id SERIAL PRIMARY KEY NOT NULL,
         movement_type_name VARCHAR(50) NOT NULL 
@@ -241,7 +243,7 @@ export async function tblMovementTypes() {
     //is it already populated
     const isPopulated = await isTablePopulated(tblName, minCount);
     if (isPopulated) {
-      console.log(`${tblName} table is already populated.`);
+      console.log(pc.cyan(`${tblName} table is ready.`));
       return;
     }
 
@@ -258,12 +260,12 @@ export async function tblMovementTypes() {
 
     //confirm transaction
     await pool.query('COMMIT');
-    console.log('All tuples inserted successfully.');
+    console.log(pc.bold(pc.greenBright('All tuples inserted successfully.')));
   } catch (
     error // Revertir la transacción en caso de error
   ) {
     await pool.query('ROLLBACK');
-    console.error('Error inserting tuples:', error);
+    console.error(pc.redBright('Error inserting tuples:', error));
   }
 }
 //tblMovementTypes();

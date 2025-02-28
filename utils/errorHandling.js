@@ -1,10 +1,10 @@
 //createError.js
-
+import pc from 'picocolors'
 export function createError(statusCode, message) {
   const err = new Error();
   err.status = statusCode;
   err.message = message;
-  console.log('running create error fn');
+  console.log(pc.red('Running create error fn'));
   return { status: err.status, message: err.message };
 }
 

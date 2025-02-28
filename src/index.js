@@ -13,6 +13,7 @@ import {
   tblMovementTypes,
   tblUserRoles,
 } from './db/populateDB.js';
+import pc from 'picocolors';
 
 dotenv.config();
 // interface CustomError extends Error {status?:number}
@@ -72,7 +73,7 @@ console.log('message', 'Hola Mundo');
 //Dtabase initialization.  Función para inicializar la base de datos
 async function initializeDatabase() {
   try {
-    console.log('Verificando si la base de datos necesita inicialización...');
+    console.log(pc.cyanBright('Verificando existencia de datos en tablas ...'));
 
     // Initialize tables with catalogued field attributes
     await tblCurrencies();
@@ -80,10 +81,10 @@ async function initializeDatabase() {
     await tblAccountTypes();
     await tblMovementTypes();
 
-    console.log('Base de datos inicializada correctamente.');
+    console.log(pc.greenBright('Base de datos inicializada correctamente.'));
   } catch (error) {
     console.error(
-      'Error durante la inicialización de la base de datos:',
+      pc.red('Error durante la inicialización de la base de datos:'),
       error
     );
     throw error; // Relanzar el error para manejarlo en el nivel superior
@@ -97,16 +98,16 @@ await initializeDatabase()
   .then(() => {
     // Iniciar el servidor
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(pc.yellowBright(`Server running on port ${PORT}`));
     });
   })
   .catch((error) => {
-    console.error('Critical error during initialization:', error);
+    console.erro(pc.red('Critical error during initialization:', error));
     process.exit(1); // Salir del proceso si hay un error crítico
   });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
+  console.error(pc.redBright('Unexpected error on idle client', err));
   // Termina la aplicación si hay un error grave
   // process.exit(-1);
 });
@@ -123,7 +124,7 @@ app.use('*', (req, res) => {
 //message error handling
 // app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
 app.use((err, req, response, next) => {
-  console.error('error handled response ',  err);
+  console.error(pc.red('error handled response ', err));
   const errorStatus = err.status || 500;
   const errorMessage = err.message || 'Something went wrong';
   response.status(errorStatus).json({
