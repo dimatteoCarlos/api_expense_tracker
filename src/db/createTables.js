@@ -1,6 +1,6 @@
 export const createTables = `
 CREATE TABLE users(
-user_id UUID PRIMARY KEY NOT NULL, username VARCHAR(50) UNIQUE NOT NULL, email VARCHAR(50) UNIQUE NOT NULL, user_firstname VARCHAR(25) NOT NULL,  user_lastname VARCHAR(25)  NOT NULL, user_contact VARCHAR(25), password_hashed VARCHAR(255) NOT NULL, currency_id INT DEFAULT 1 REFERENCES currencies(currency_id) ON DELETE SET NULL ON UPDATE CASCADE, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, upadated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+user_id UUID PRIMARY KEY NOT NULL, username VARCHAR(50) UNIQUE NOT NULL, email VARCHAR(50) UNIQUE NOT NULL, user_firstname VARCHAR(25) NOT NULL,  user_lastname VARCHAR(25)  NOT NULL, user_contact VARCHAR(25), password_hashed VARCHAR(255) NOT NULL, currency_id INT DEFAULT 1 REFERENCES currencies(currency_id) ON DELETE SET NULL ON UPDATE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
 user_role_id INT DEFAULT REFERENCES user_roles(user_role_id) ON DELETE SET NULL ON UPDATE CASCADE,
 ) 
@@ -26,10 +26,10 @@ account_name VARCHAR(50) NOT NULL,
 account_type_id INT  REFERENCES account_types(account_type_id) ON DELETE SET NULL ON UPDATE CASCADE, 
 currency_id INT NOT NULL REFERENCES currencies(currency_id) ON DELETE RESTRICT ON UPDATE CASCADE, 
  account_starting_amount DECIMAL(15,2) NOT NULL,
- account_balance DECIMAL(15,2),
-    account_start_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+ account_balance DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    account_start_date TIMESTAMPTZ NOT NULL CHECK (account_start_date <= NOW()) , 
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMPT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMPT
 )
 
 CREATE TABLE movement_types (
@@ -43,8 +43,8 @@ CREATE TABLE movements (
     currency_id INT  REFERENCES currencies(currency_id) ON DELETE SET NULL ON UPDATE CASCADE, 
     amount DECIMAL(15,2) NOT NULL,
     description VARCHAR(255),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
 
 CREATE TABLE expense_movements (
@@ -74,7 +74,7 @@ CREATE TABLE income_sources (
 CREATE TABLE investment_movements (
     movement_id INT PRIMARY KEY NOT NULL REFERENCES movements(movement_id) ON DELETE CASCADE ON UPDATE CASCADE,
     transaction_type VARCHAR(10) NOT NULL CHECK (transaction_type IN ('deposit', 'withdraw')),
-    transaction_investment_date DATE NOT NULL,
+    transaction_investment_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     account_id INT NOT NULL REFERENCES user_accounts(account_id) ON DELETE CASCADE ON UPDATE CASCADE
 )
 
@@ -82,7 +82,7 @@ CREATE TABLE debt_movements (
     movement_id INT PRIMARY KEY NOT NULL REFERENCES movements(movement_id) ON DELETE CASCADE ON UPDATE CASCADE,
     debtor_id INT NOT NULL REFERENCES debt_debtor(debtor_id) ON DELETE CASCADE ON UPDATE CASCADE,
     debt_transaction_type VARCHAR(8) NOT NULL CHECK (debt_transaction_type IN ('lend', 'borrow')),
-    transaction_debt_date DATE NOT NULL
+    transaction_debt_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
 
 CREATE TABLE debt_debtor (
@@ -97,7 +97,19 @@ CREATE TABLE pocket_movements (
     pocket_name VARCHAR(50) NOT NULL,
     target_amount DECIMAL(15,2),
     pocket_note VARCHAR(50),
-    desired_date DATE,
+    desired_date TIMESTAMPTZ,
+)
+
+CREATE TABLE IF NOT EXISTS transactions(
+transaction_id SERIAL PRIMARY KEY,
+user_id UUID NOT NULL,
+description TEXT,
+movement_type_id INTEGER NOT NULL,
+status VARCHAR(50) NOT NULL, 
+amount DECIMAL(15,2) NOT NULL, 
+currency_id INTEGER NOT NULL, 
+account_name VARCHAR(100) NOT NULL, 
+create_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 )
 
 `;

@@ -4,7 +4,7 @@ JOIN currencies ON users.currency_id = currencies.currency_id
 JOIN user_roles ON users.user_role_id = user_roles.user_role_id
 ORDER BY username ASC
 
--- get user by id
+-- Get user by id
 SELECT u.user_id, u.username,
 u.email, 
 u.user_firstname, 
@@ -17,7 +17,7 @@ JOIN user_roles ON user_roles.user_role_id = u.user_role_id
 WHERE u.user_id = $1
 ORDER BY account_id ASC
 
--- check user existence by id
+-- Check user existence by id
  SELECT 1
     FROM users u
     JOIN user_accounts ON user_accounts.user_id = u.user_id
@@ -26,7 +26,7 @@ ORDER BY account_id ASC
     WHERE u.user_id = $1
     LIMIT 1.rows[0]
 
--- get all user id accounts by user id 
+-- Get all user id accounts by user id 
 SELECT  account_id, account_name
     account_type_id
     currency_id
@@ -39,10 +39,12 @@ SELECT  account_id, account_name
     WHERE user_id = $1
     ORDER BY account_id ASC
 
--- get all user accounta info by user id and account name,
-SELECT * FROM users_accounts WHERE user_id = $1 AND account_name ILIKE '%$2%' ORDER BY account_name
+-- Get all user accounta info by user id and account name,
+SELECT * FROM users_accounts WHERE user_id = $1 AND account_name ILIKE $2 ORDER BY account_name;
 
+-- {text:`SELECT * FROM users_accounts WHERE user_id = $1 AND account_name ILIKE $2  ORDER BY account_name`, values: [userId, `%${account_name}%`]}
 
 -- get all user sources income by user id
+
 
 -- get all user account info by user id account id and account type id

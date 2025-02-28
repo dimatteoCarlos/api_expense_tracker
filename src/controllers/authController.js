@@ -1,5 +1,5 @@
 import { createToken, hashed, isRight } from '../../utils/authFn.js';
-import { createError } from '../../utils/createError.js';
+import { createError } from '../../utils/errorHandling.js';
 import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../db/configDB.js';
 
@@ -119,7 +119,7 @@ export const signInUser = async (req, res, next) => {
     // console.log( userRole.rows[0].user_role_name ,token);
 
     req.body.password = undefined;
-    
+
     userData[0].password_hashed = undefined;
 
     console.log(

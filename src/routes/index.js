@@ -8,6 +8,6 @@ const router = express.Router(); //es la misma aplicacion o es otra, como es el 
 console.log('en el index de routes');
 router.use('/auth', authRoutes);
 router.use('/user', userRoutes);
-router.use('/accounts', accountRoutes);
+router.use('/account', accountRoutes);
 
 export default router;

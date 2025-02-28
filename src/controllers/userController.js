@@ -1,5 +1,5 @@
 import { hashed, isRight } from '../../utils/authFn.js';
-import { createError } from '../../utils/createError.js';
+import { createError } from '../../utils/errorHandling.js';
 import { pool } from '../db/configDB.js';
 
 //getUserbyId

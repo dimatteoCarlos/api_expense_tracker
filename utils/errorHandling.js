@@ -5,8 +5,12 @@ export function createError(statusCode, message) {
   err.status = statusCode;
   err.message = message;
   console.log('running create error fn');
-  return err;
+  return { status: err.status, message: err.message };
 }
+
+
+
+
 
 export const handlePostgresErrorEs = (error) => {
   let code = 500; // Código de estado HTTP por defecto
@@ -15,7 +19,8 @@ export const handlePostgresErrorEs = (error) => {
   switch (error.code) {
     case '23514': // Violación de CHECK constraint
       code = 400;
-      message = 'Violación de restricción: La fecha de inicio no puede ser futura.';
+      message =
+        'Violación de restricción: La fecha de inicio no puede ser futura.';
       break;
 
     case '23505': // Violación de UNIQUE constraint
@@ -40,7 +45,6 @@ export const handlePostgresErrorEs = (error) => {
 
   return { code, message };
 };
-
 
 const handlePostgresError = (error) => {
   let code = 500; // Default HTTP status code
@@ -74,6 +78,3 @@ const handlePostgresError = (error) => {
 
   return { code, message };
 };
-
-
-

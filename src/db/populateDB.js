@@ -9,7 +9,6 @@ async function tableExists(tableName) {
     throw new Error('Invalid table name');
   }
 
-  // WHERE table_name = 'currencies'
   const queryText = `
     SELECT EXISTS (
       SELECT 1 FROM information_schema.tables
@@ -18,7 +17,7 @@ async function tableExists(tableName) {
   `;
   const result = await pool.query(queryText);
   // console.log(tableName, ' existe? ', result.rows[0].exists);
-  return result.rows[0].exists; // Devuelve true o false
+  return result.rows[0].exists; // Returns true or false
 }
 
 async function isTablePopulated(tableName, minCount = 1) {
@@ -27,7 +26,7 @@ async function isTablePopulated(tableName, minCount = 1) {
   }
   const queryText = `SELECT COUNT(*) FROM ${tableName}`;
   const result = await pool.query(queryText);
-  return result.rows[0].count > minCount;
+  return result.rows[0].count >= minCount;
 }
 
 //--
@@ -101,7 +100,7 @@ export async function tblUserRoles() {
     { user_role_id: 3, user_role_name: 'superadmin' },
   ];
   const tblName = 'user_roles';
-  const minCount = 2;
+  const minCount = rolesValues.length;
 
   try {
     //verify if table exists
@@ -161,7 +160,7 @@ export async function tblAccountTypes() {
     { account_type_id: 8, account_type_name: 'cash' },
   ];
   const tblName = 'account_types';
-  const minCount = 3;
+  const minCount = accountTypeValues.length-1;
 
   try {
     //verify if table exists
@@ -208,3 +207,63 @@ export async function tblAccountTypes() {
   }
 }
 //tblAccountTypes();
+
+//---
+'expense', 'income', 'investment', 'debt', 'pocket';
+//transactions
+export async function tblMovementTypes() {
+  const movementTypeValues = [
+    { movement_type_id: 1, movement_type_name: 'expense' },
+    { movement_type_id: 2, movement_type_name: 'income' },
+    { movement_type_id: 3, movement_type_name: 'investment' },
+    { movement_type_id: 4, movement_type_name: 'debt' },
+    { movement_type_id: 5, movement_type_name: 'pocket' },
+  ];
+  const tblName = 'movement_types';
+  const minCount = movementTypeValues.length;
+
+  try {
+    //verify if table exists
+    if (!isValidTableName(tblName)) {
+      throw new Error('Invalid table name');
+    }
+    const exists = await tableExists(tblName);
+
+    if (!exists) {
+      console.log(`${tblName} table does not exist. Creating it...'`);
+      const createQuery = `CREATE TABLE movement_types (
+        movement_type_id SERIAL PRIMARY KEY NOT NULL,
+        movement_type_name VARCHAR(50) NOT NULL 
+)`;
+      await pool.query(createQuery);
+    }
+
+    //is it already populated
+    const isPopulated = await isTablePopulated(tblName, minCount);
+    if (isPopulated) {
+      console.log(`${tblName} table is already populated.`);
+      return;
+    }
+
+    //initiate a transaction
+    await pool.query('BEGIN');
+    //run through the data and insert every tuple
+    for (const type of movementTypeValues) {
+      const queryText = `INSERT INTO movement_types(movement_type_id,
+      movement_type_name) VALUES ($1,$2)`;
+      const values = [type.movement_type_id, type.movement_type_name];
+      await pool.query(queryText, values);
+      console.log(`inserted: ${tblName}, ${type.movement_type_name}`);
+    }
+
+    //confirm transaction
+    await pool.query('COMMIT');
+    console.log('All tuples inserted successfully.');
+  } catch (
+    error // Revertir la transacción en caso de error
+  ) {
+    await pool.query('ROLLBACK');
+    console.error('Error inserting tuples:', error);
+  }
+}
+//tblMovementTypes();

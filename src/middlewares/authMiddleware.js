@@ -1,7 +1,7 @@
 //input of: user_accounts, expense_categories, movements, trac
 
 import jwt from 'jsonwebtoken';
-import { createError } from '../../utils/createError.js';
+import { createError } from '../../utils/errorHandling.js';
 
 export const verifyHeaderAuth = (req, res, next) => {
   const authHeader = req?.headers?.authorization;
