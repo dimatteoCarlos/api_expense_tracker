@@ -6,7 +6,7 @@ import {
   updateUserById,
 } from '../controllers/userController.js';
 
-export const router = express.Router();
+const router = express.Router();
 
 const select = true;
 const middlewareFn = select ? verifyUser : verifyHeaderAuth;

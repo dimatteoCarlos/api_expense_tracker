@@ -56,5 +56,10 @@ SELECT currency_id  FROM currencies WHERE currency_code= $1
 
 
 
+-- de interes
+-- ALTER TABLE transactions
+-- RENAME COLUMN create_at TO created_at;
+
+
 
 

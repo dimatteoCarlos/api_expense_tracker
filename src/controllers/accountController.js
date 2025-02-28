@@ -1,6 +1,6 @@
+//createAccount
 //addMoneyToAccount
-//deleteAccount
-//getAccount
+//deleteAccount / not yet done
 
 import { validateAndNormalizeDate } from '../../utils/helpers.js';
 import { pool } from '../db/configDB.js';
@@ -12,6 +12,7 @@ import {
 import pc from 'picocolors';
 
 //endpoint :  http://localhost:5000/api/accounts/?user=userId&account_type=all&limit=0&offset=0
+
 //before calling getAccount user must be verified with verifyUser() authmiddleware; in that case take userId from req.user
 
 //createAccount
@@ -329,10 +330,7 @@ export const addMoneyToAccount = async (req, res, next) => {
 
     // const newAmountToAdd = Number(amount);
     const newAmountToAdd = amount;
-    console.log(
-      '🚀 ~ addMoneyToAccount veracion~ newAmountToAdd:',
-      newAmountToAdd
-    );
+    console.log('🚀 ~ addMoneyToAccount ~ newAmountToAdd:', newAmountToAdd);
 
     //CHECK THE CURRENCY OF THE DEPOSIT WITH  THE CURRENCY OF THE ACCOUNT. TO ADD, THEY MUST BE CORRESPONDENT, AND DECIDE WHAT CURRENCY USE TO SAVE INTO THE DATABASE. IF CONVERSION MUST BE DONE , THEN WHAT exchange rate to use, it has to do with the date of the transaction or will be the updated rate?
 
@@ -425,7 +423,8 @@ export const addMoneyToAccount = async (req, res, next) => {
         currencyCode
       );
     } else {
-      const message = 'balance account was not updated';
+      const message =
+        'Balance account was not updated. Check account id number';
       console.warn(pc.red(message));
       return res.status(403).json({ status: 403, message });
     }
@@ -454,7 +453,7 @@ export const addMoneyToAccount = async (req, res, next) => {
     //UPDATE users SET accounts_id = array_cat(accounts, $1), update_dat = CURRENT_TIMESTAMP id=$2 RETURNING *, values:[accounts, userId]
 
     //   //transaction confirmed
-    //   await client.query('COMMIT');
+    await client.query('COMMIT');
     //Successfull answer
     const message = `${accountInfo[0].account_name} money was added to account balance and transaction registered successfully`;
     console.log(pc.cyanBright(message));
@@ -472,7 +471,6 @@ export const addMoneyToAccount = async (req, res, next) => {
     const { code, message } = handlePostgresError(error);
 
     // Send response to frontend
-    // next(error);
     return next(createError(code, message));
   } finally {
     client.release(); //always release the client back to the pool
