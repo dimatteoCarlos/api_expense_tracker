@@ -8,10 +8,6 @@ export function createError(statusCode, message) {
   return { status: err.status, message: err.message };
 }
 
-
-
-
-
 export const handlePostgresErrorEs = (error) => {
   let code = 500; // Código de estado HTTP por defecto
   let message = error.message || 'Error interno del servidor'; // Mensaje por defecto
@@ -46,7 +42,7 @@ export const handlePostgresErrorEs = (error) => {
   return { code, message };
 };
 
-const handlePostgresError = (error) => {
+export const handlePostgresError = (error) => {
   let code = 500; // Default HTTP status code
   let message = error.message || 'Internal server error'; // Default message
 

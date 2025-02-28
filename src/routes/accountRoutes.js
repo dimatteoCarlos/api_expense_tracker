@@ -1,9 +1,9 @@
 import express from 'express';
-import { createAccount } from '../controllers/accountController.js';
+import { createAccount, getAccount } from '../controllers/accountController.js';
 const router = express.Router();
 
 router.post('/', createAccount);
-// router.get('/', getAccount);
+router.get('/', getAccount);
 // router.get('/:id', getAccount)
 
 export default router;

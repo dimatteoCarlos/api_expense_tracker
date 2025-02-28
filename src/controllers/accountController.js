@@ -1,4 +1,3 @@
-//createAccount
 //addMoneyToAccount
 //deleteAccount
 //getAccount
@@ -7,18 +6,26 @@ import { validateAndNormalizeDate } from '../../utils/helpers.js';
 import { pool } from '../db/configDB.js';
 import {
   createError,
+  handlePostgresError,
   handlePostgresErrorEs,
 } from '../../utils/errorHandling.js';
 
 //endpoint :  http://localhost:5000/api/accounts/?user=userId&account_type=all&limit=0&offset=0
 //before calling getAccount user must be verified with verifyUser() authmiddleware; in that case take userId from req.user
 
+//createAccount
 export const createAccount = async (req, res, next) => {
   console.log('createAccount');
   console.log('req.query;', req.query);
   const client = await pool.connect(); // Get a client from the pool
   try {
     const { user: userId } = req.query;
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ status: 400, message: 'User ID is required.' });
+    }
+    //que pasa si el user es undefined o si no existe en las tablas de user? creo que para llegar aqui, dberia pasarse por verifyUser
 
     await client.query('BEGIN');
     const {
@@ -167,12 +174,113 @@ export const createAccount = async (req, res, next) => {
       error.message || 'something went wrong'
     );
     // Handle PostgreSQL error
-    const { code, message } = handlePostgresErrorEs(error);
+    const { code, message } = handlePostgresError(error);
 
     // Send response to frontend
-    next(error);
+    // next(error);
     return next(createError(code, message));
   } finally {
     client.release(); //always release the client back to the pool
+  }
+};
+
+//*********** */
+//getAccount
+export const getAccount = async (req, res, next) => {
+  console.log('getAccount');
+
+  try {
+    console.log('req.query;', req.query);
+    const { user: userId } = req.query;
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ status: 400, message: 'User ID is required.' });
+    }
+    const { type } = req.query;
+    // si type no existe, se tomaran todos los tipos. si existe, hay que verificar si esta catalogado, si no lo esta, seria un error. Si esta catalogado, recuperar el ac type id, para hacer la busqueda por el id.
+
+    //si type existe , query de account_type_id segun el name, y luego el query de los account_type segun el user y el type_id.
+    //si type no existe , query de account segun el user de todos los tipos de cuenta.
+    // se hace el query seleccion, y si no existen valores, se despacha un error de registros not found
+
+    if (type) {
+      const typeAccountIdResult = await pool.query({
+        text: `SELECT account_type_id FROM account_types WHERE account_type_name = $1`,
+        values: [type],
+      });
+      console.log(
+        '🚀 ~ getAccount ~ typeAccountIdResult:',
+        typeAccountIdResult.rows
+      );
+
+      const typeAccountIdExists = typeAccountIdResult.rows.length > 0;
+      console.log(
+        '🚀 ~ getAccount ~ typeAccountIdExists:',
+        typeAccountIdExists
+      );
+      const typeAccountId = typeAccountIdResult.rows[0].account_type_id;
+
+      console.log('🚀 ~ getAccount ~ typeAccountId:', typeAccountId);
+
+      if (!typeAccountIdExists) {
+        const message = `Account type ${type} was not found.`;
+        console.log(message);
+        return res.status(404).json({ status: 404, message });
+      }
+
+      const accountsByTypeResult = await pool.query({
+        text: `SELECT * FROM user_accounts WHERE user_id = $1 AND account_type_id = $2`,
+        values: [userId, typeAccountId],
+      });
+
+      const accountsByTypeResultExists = accountsByTypeResult.rows.length > 0;
+
+      if (!accountsByTypeResultExists) {
+        const message = `No account of ${type} type for the user ${userId} was found.`;
+        console.log(message);
+        return res.status(404).json({ status: 404, message });
+      }
+
+      //Successfull answer. user accounts of user by type
+
+      console.log(
+        `${accountsByTypeResult.rows.length} account(s) successfully found of type ${type} for user ${userId}`
+      );
+
+      return res.status(200).json({
+        message: `${accountsByTypeResult.rows.length} Account(s) successfully found of type ${type} for user ${userId}`,
+        data: accountsByTypeResult.rows,
+      });
+    } else {
+      const userAccountsResult = await pool.query({
+        text: `SELECT * FROM user_accounts WHERE user_id = $1`,
+        values: [userId],
+      });
+
+      const userAccountsResultExists = userAccountsResult.rows.length > 0;
+
+      if (!userAccountsResultExists) {
+        const message = `No account was found.`;
+        console.log(message);
+        return res.status(404).json({ status: 404, message });
+      }
+
+      //Successfull answer
+      return res.status(200).json({
+        message: `${userAccountsResult.rows.length} account(s) found`,
+        data: userAccountsResult.rows,
+      });
+    }
+  } catch (error) {
+    console.error(
+      'when getting the accounts:',
+      error.message || 'something went wrong'
+    );
+    // Handle PostgreSQL error
+    const { code, message } = handlePostgresErrorEs(error);
+
+    // Send response to frontend
+    return next(createError(code, message));
   }
 };
