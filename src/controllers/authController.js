@@ -2,6 +2,7 @@ import { createToken, hashed, isRight } from '../../utils/authFn.js';
 import { createError } from '../../utils/errorHandling.js';
 import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../db/configDB.js';
+import pc from 'picocolors'
 
 //--sign-up or register
 export const signUpUser = async (req, res, next) => {
@@ -64,7 +65,7 @@ export const signUpUser = async (req, res, next) => {
       user: userData.rows[0], //que hay aqui
     });
   } catch (error) {
-    console.log('auth error:', error);
+    console.log(pc.red('auth error:', error));
     next(createError(500, error.message || 'internal signup user error'));
   }
 };
@@ -87,13 +88,13 @@ export const signInUser = async (req, res, next) => {
     }
 
     if (userData.length > 1) {
-      console.error(
-        'accounts:',
-        'there are more than one account with these data'
+      console.warn(
+        'Accounts info:',
+        'There are more than one account with these data'
       );
       return next(createError(400, 'more than one user account found')); //then what to do in this case?
     }
-    console.log(req.body.password, userData[0].password_hashed);
+    // console.log(req.body.password, userData[0].password_hashed);
     const isCorrect = await isRight(
       req.body.password,
       userData[0].password_hashed
@@ -101,9 +102,9 @@ export const signInUser = async (req, res, next) => {
     // console.log("🚀 ~ signInUser ~ isCorrect:", isCorrect)
 
     if (!isCorrect) {
-      console.log('no authenticated:', 'wrong password');
+      console.warn('no authenticated:', 'wrong password');
       return next(
-        createError(401, 'unauthorized. Wrong password or user data')
+        createError(401, 'Unauthorized. Wrong password or user data')
       );
     }
 

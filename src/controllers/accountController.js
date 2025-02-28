@@ -9,13 +9,14 @@ import {
   handlePostgresError,
   handlePostgresErrorEs,
 } from '../../utils/errorHandling.js';
+import pc from 'picocolors';
 
 //endpoint :  http://localhost:5000/api/accounts/?user=userId&account_type=all&limit=0&offset=0
 //before calling getAccount user must be verified with verifyUser() authmiddleware; in that case take userId from req.user
 
 //createAccount
 export const createAccount = async (req, res, next) => {
-  console.log('createAccount');
+  console.log(pc.yellowBright('createAccount'));
   console.log('req.query;', req.query);
   const client = await pool.connect(); // Get a client from the pool
   try {
@@ -39,10 +40,10 @@ export const createAccount = async (req, res, next) => {
     const accountStartDateNormalized =
       validateAndNormalizeDate(account_start_date);
 
-    console.log(
-      '🚀 ~ createAccount ~ accountStartDateNormalized:',
-      accountStartDateNormalized
-    );
+    // console.log(
+    //   '🚀 ~ createAccount ~ accountStartDateNormalized:',
+    //   accountStartDateNormalized
+    // );
 
     if (
       !account_name ||
@@ -52,7 +53,7 @@ export const createAccount = async (req, res, next) => {
       !accountStartDateNormalized
     ) {
       const message = 'All fields are required';
-      console.log(message);
+      console.warn(pc.yellowBright(message));
       return res.status(400).json({ status: 400, message });
     }
 
@@ -65,11 +66,11 @@ export const createAccount = async (req, res, next) => {
     const accountExistResult = await pool.query(accountExistQuery);
     const accountExist = accountExistResult.rows.length > 0;
 
-    console.log(
-      '🚀 ~ createAccount ~ accountExist:',
-      accountExist
-      // accountExistResult.rows[0].account_name ?? 'non exists'
-    );
+    // console.log(
+    //   '🚀 ~ createAccount ~ accountExist:',
+    //   accountExist
+    //   // accountExistResult.rows[0].account_name ?? 'non exists'
+    // );
 
     if (accountExist) {
       await pool.query('ROLLBACK');
@@ -89,7 +90,7 @@ export const createAccount = async (req, res, next) => {
     if (currencyIdResult.rows.length === 0) {
       await client.query('ROLLBACK');
       const message = `Currency with code ${currency_code} was not found.`;
-      console.log(message);
+      console.warn(pc.yellowBright(message));
       return res.status(404).json({ status: 404, message });
     }
 
@@ -101,7 +102,7 @@ export const createAccount = async (req, res, next) => {
     if (accountTypeIdResult.rows.length === 0) {
       await client.query(`ROLLBACK`);
       const message = `Account type with name ${account_type_name} was not found`;
-      console.log(message);
+      console.warn(pc.yellowBright(message));
       // return res.status(404).json({
       //   status: 404,
       //   message,
@@ -113,8 +114,8 @@ export const createAccount = async (req, res, next) => {
     const currencyId = currencyIdResult.rows[0].currency_id,
       accountTypeId = accountTypeIdResult.rows[0].account_type_id;
 
-    console.log('🚀 ~ createAccount ~ currencyId:', currencyId);
-    console.log('🚀 ~ createAccount ~ accountTypeId:', accountTypeId);
+    // console.log('🚀 ~ createAccount ~ currencyId:', currencyId);
+    // console.log('🚀 ~ createAccount ~ accountTypeId:', accountTypeId);
 
     //update user_accounts by inserting the new account
     //existence of user_accounts must be checked
@@ -170,7 +171,7 @@ export const createAccount = async (req, res, next) => {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error(
-      'when creating account:',
+      pc.redBright('when creating account:'),
       error.message || 'something went wrong'
     );
     // Handle PostgreSQL error
@@ -187,22 +188,16 @@ export const createAccount = async (req, res, next) => {
 //*********** */
 //getAccount
 export const getAccount = async (req, res, next) => {
-  console.log('getAccount');
+  console.log(pc.magentaBright('getAccount'));
 
   try {
     console.log('req.query;', req.query);
-    const { user: userId } = req.query;
+    const { user: userId, type } = req.query;
     if (!userId) {
       return res
         .status(400)
         .json({ status: 400, message: 'User ID is required.' });
     }
-    const { type } = req.query;
-    // si type no existe, se tomaran todos los tipos. si existe, hay que verificar si esta catalogado, si no lo esta, seria un error. Si esta catalogado, recuperar el ac type id, para hacer la busqueda por el id.
-
-    //si type existe , query de account_type_id segun el name, y luego el query de los account_type segun el user y el type_id.
-    //si type no existe , query de account segun el user de todos los tipos de cuenta.
-    // se hace el query seleccion, y si no existen valores, se despacha un error de registros not found
 
     if (type) {
       const typeAccountIdResult = await pool.query({
@@ -219,15 +214,16 @@ export const getAccount = async (req, res, next) => {
         '🚀 ~ getAccount ~ typeAccountIdExists:',
         typeAccountIdExists
       );
-      const typeAccountId = typeAccountIdResult.rows[0].account_type_id;
-
-      console.log('🚀 ~ getAccount ~ typeAccountId:', typeAccountId);
 
       if (!typeAccountIdExists) {
         const message = `Account type ${type} was not found.`;
-        console.log(message);
+        console.warn(pc.magentaBright(message));
         return res.status(404).json({ status: 404, message });
       }
+
+      const typeAccountId = typeAccountIdResult.rows[0].account_type_id;
+
+      // console.log('🚀 ~ getAccount ~ typeAccountId:', typeAccountId);
 
       const accountsByTypeResult = await pool.query({
         text: `SELECT * FROM user_accounts WHERE user_id = $1 AND account_type_id = $2`,
@@ -235,18 +231,16 @@ export const getAccount = async (req, res, next) => {
       });
 
       const accountsByTypeResultExists = accountsByTypeResult.rows.length > 0;
-
-      if (!accountsByTypeResultExists) {
+      /*** */
+      if (type && !accountsByTypeResultExists) {
         const message = `No account of ${type} type for the user ${userId} was found.`;
-        console.log(message);
+        console.log(pc.magentaBright(message));
         return res.status(404).json({ status: 404, message });
       }
 
       //Successfull answer. user accounts of user by type
-
-      console.log(
-        `${accountsByTypeResult.rows.length} account(s) successfully found of type ${type} for user ${userId}`
-      );
+      const message = `${accountsByTypeResult.rows.length} Account(s) successfully found of type ${type} for user ${userId}`;
+      console.log(pc.magentaBright(message));
 
       return res.status(200).json({
         message: `${accountsByTypeResult.rows.length} Account(s) successfully found of type ${type} for user ${userId}`,
@@ -262,25 +256,188 @@ export const getAccount = async (req, res, next) => {
 
       if (!userAccountsResultExists) {
         const message = `No account was found.`;
-        console.log(message);
+        console.warn(pc.magentaBright(message));
         return res.status(404).json({ status: 404, message });
       }
 
-      //Successfull answer
+      //Successfull response
+      const message = `${userAccountsResult.rows.length} account(s) found`;
+      console.warn(pc.magentaBright(message));
       return res.status(200).json({
-        message: `${userAccountsResult.rows.length} account(s) found`,
+        message,
         data: userAccountsResult.rows,
       });
     }
   } catch (error) {
     console.error(
-      'when getting the accounts:',
+      pc.redBright('when getting the accounts:'),
       error.message || 'something went wrong'
     );
     // Handle PostgreSQL error
     const { code, message } = handlePostgresErrorEs(error);
-
     // Send response to frontend
     return next(createError(code, message));
+  }
+};
+
+//******** */
+//addMoneyToAccount
+export const addMoneyToAccount = async (req, res, next) => {
+  console.log(pc.cyanBright('createAccount'));
+  console.log('req.query;', req.query);
+
+  const client = await pool.connect(); // Get a client from the pool
+  try {
+    const { user: userId } = req.query;
+    if (!userId) {
+      const message = 'User ID is required.';
+      console.warn(pc.cyanBright(message));
+      return res.status(400).json({ status: 400, message });
+    }
+    //que pasa si el user es undefined o si no existe en las tablas de user? creo que para llegar aqui, dberia pasarse por verifyUser
+
+    const { id: accountId } = req.params;
+
+    if (!accountId) {
+      const message = 'account ID is required.';
+      console.warn(pc.cyanBright(message));
+      return res.status(400).json({ status: 400, message });
+    }
+    const { amount, currency: currencyCode } = req.body;
+
+    //si currency no es introducida podria usarse la que es por defecto
+
+    // if (!amount || !currencyCode) {
+    //   const message = 'All fields are required';
+    //   console.warn(pc.cyanBright(message));
+    //   return res.status(400).json({ status: 400, message });
+    // }
+
+    // const newAmountToAdd = Number(amount);
+
+    //CHECK THE CURRENCY OF THE DEPOSIT WITH  THE CURRENCY OF THE ACCOUNT. TO ADD, THEY MUST BE CORRESPONDENT, AND DECIDE WHAT CURRENCY USE TO SAVE INTO THE DATABASE. IF CONVERSION MUST BE DONE , THEN WHAT exchange rate to use, it has to do with the date of the transaction or will be the updated rate?
+
+    //hacer una funntion para recuperar currency id, y que tenga indexes de currency
+
+    //currency and account type ids handling (since theses are chosen from a select on the browser frontend, existence should be warant)
+
+    //---check currency existence---------------
+    // const currencyIdResult = await pool.query({
+    //   text: `SELECT currency_id FROM currencies WHERE currency_code = $1`,
+    //   values: [currencyCode],
+    // });
+
+    // if (currencyIdResult.rows.length === 0) {
+    //   const message = `Currency with code ${currencyCode} was not found.`;
+    //   console.warn(pc.yellowBright(message));
+    //   return res.status(404).json({ status: 404, message });
+    // }
+
+    // const currencyId = currencyIdResult.rows[0].currency_id;
+
+    // console.log('🚀 ~ createAccount ~ currencyId:', currencyId);
+
+    //---------*****
+    //account id must be provided by the frontend in the request
+    // //search for existent OF user_accounts by userId and account name
+    // const accountExistQuery = {
+    //   text: `SELECT * FROM user_accounts WHERE user_id = $1 AND account_name ILIKE $2`,
+    //   values: [userId, `%${account_name}%`],
+    // };
+
+    // const accountExistResult = await pool.query(accountExistQuery);
+    // const accountExist = accountExistResult.rows.length > 0;
+
+    // // console.warn(
+    // //   '🚀 ~ createAccount ~ accountExist:',
+    // //   accountExist
+    // //   // accountExistResult.rows[0].account_name ?? 'non exists'
+    // // );
+
+    // if (accountExist) {
+    //   await pool.query('ROLLBACK');
+    //   return res.status(409).json({
+    //     status: 409,
+    //     message: `${accountExistResult.rows.length} account(s) found with a similar name`,
+    //     account_found: [accountExistResult.rows[0].account_name],
+    //   });
+    // }
+
+    // const accountTypeIdResult = await pool.query({
+    //   text: `SELECT account_type_id FROM account_types WHERE account_type_name = $1`,
+    //   values: [account_type_name],
+    // });
+
+    // if (accountTypeIdResult.rows.length === 0) {
+    //   await client.query(`ROLLBACK`);
+    //   const message = `Account type with name ${account_type_name} was not found`;
+    //   console.warn(pc.yellowBright(message));
+    //   // return res.status(404).json({
+    //   //   status: 404,
+    //   //   message,
+    //   // });
+    //   // Send response to frontend
+    //   next(createError(404, message));
+    // }
+
+    // accountTypeId = accountTypeIdResult.rows[0].account_type_id;
+    // console.log('🚀 ~ createAccount ~ accountTypeId:', accountTypeId);
+
+    //----------*******-
+
+    //   await client.query('BEGIN');
+
+    //   const newAccountBalanceResult = await pool.query({
+    //     text: `UPDATE user_accounts SET account_balance = (account_balance + $1), currency_id = $2, update_at = CURRENT_TIMESTAMP , WHERE user_id = $3 AND account_id = $4 RETURNING *`,
+    //     values: [newAmountToAdd, currencyId, userId, accountId],
+    //   });
+
+    //   const accountInfo = newAccountBalanceResult.rows[0];
+    //   const description = `${accountInfo.account_name} - (Deposit)`;
+
+    //   //Add  deposit transaction
+    //   const movement_type_id = 2; // represents "income" type movement
+
+    //   const transactionDepositQuery = {
+    //     text: `INSERT INTO transactions(user_id, description, movement_type_id, status,  amount, currency_id,  account_name ) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    //     values: [
+    //       userId,
+    //       description,
+    //       movement_type_id,
+    //       'completed',
+    //       newAmountToAdd,
+    //       currencyId,
+    //       accountInfo.account_name, //source?
+    //     ],
+    //   };
+
+    //   await pool.query(transactionDepositQuery);
+
+    //   //opcion de crear cuentas en un arreglo y guardarlo en users
+    //   //UPDATE users SET accounts_id = array_cat(accounts, $1), update_dat = CURRENT_TIMESTAMP id=$2 RETURNING *, values:[accounts, userId]
+
+    //   //transaction confirmed
+    //   await client.query('COMMIT');
+    //   //Successfull answer
+    //   const message = `${accountInfo.account_name} money added and transaction registered successfully`
+    //   console.log(pc.cyanBright(message))
+    //   res.status(200).json({
+    //     message,
+    //     data: accountInfo,
+    //   });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error(
+      pc.redBright('when creating account:'),
+      error.message || 'something went wrong'
+    );
+    // Handle PostgreSQL error
+    const { code, message } = handlePostgresError(error);
+
+    // Send response to frontend
+    // next(error);
+    return next(createError(code, message));
+  } finally {
+    client.release(); //always release the client back to the pool
   }
 };

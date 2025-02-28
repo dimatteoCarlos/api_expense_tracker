@@ -67,7 +67,7 @@ app.use(
 app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
 app.use(cookieParser());
 //initiate
-console.log('message', 'Hola Mundo');
+console.log('Hola Mundo');
 
 //------------------
 //Dtabase initialization.  Función para inicializar la base de datos
@@ -135,9 +135,11 @@ app.use((err, req, response, next) => {
 });
 
 process.on('SIGINT', () => {
-  console.log('Shutting down gracefully...');
+  console.log(pc.cyan('Shutting down gracefully...'));
   pool.end(() => {
-    console.log('Database pool closed.');
+    console.log(pc.greenBright('Database pool closed.'));
+    // https://nodejs.org/api/process.html#process_process_exit_code
     process.exit(0);
+    // process.exitCode=0;
   });
 });

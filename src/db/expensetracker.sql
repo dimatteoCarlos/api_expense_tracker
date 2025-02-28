@@ -47,4 +47,12 @@ SELECT * FROM users_accounts WHERE user_id = $1 AND account_name ILIKE $2 ORDER 
 -- get all user sources income by user id
 
 
--- get all user account info by user id account id and account type id
+-- get all user accounts  by user_id and account type id
+SELECT * FROM user_accounts WHERE user_id ='430e5635-d1e6-4f53-a104-5575c6e60c81'
+AND account_type_id = 2
+
+-- get currency_id from currencies by currency_code
+SELECT currency_id  FROM currencies WHERE currency_code= $1
+
+
+
