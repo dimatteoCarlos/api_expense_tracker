@@ -56,3 +56,5 @@ SELECT currency_id  FROM currencies WHERE currency_code= $1
 
 
 
+
+

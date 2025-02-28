@@ -137,13 +137,15 @@ export const createAccount = async (req, res, next) => {
 
     //Add initial deposit transaction
     const newAccount = createAccountResult.rows[0];
-    const description = `${newAccount.account_name} - (initial Deposit)`;
+    const newAccountId = createAccountResult.rows[0].account_id;
+    console.log('🚀 ~ createAccount ~ newAccountId:', newAccountId);
+    const description = `${newAccount.account_name}-(Initial Deposit)`;
     const movement_type_id = 2; // represents "income" type movement
 
     //BUSCAR currncy_id, source_id con base en los datos suministrados en el body
     //Search currency_id and source_id base on body data
     const initialDepositQuery = {
-      text: `INSERT INTO transactions(user_id, description, movement_type_id, status,  amount, currency_id,  account_name ) VALUES($1,$2,$3,$4,$5,$6,$7)`,
+      text: `INSERT INTO transactions(user_id, description, movement_type_id, status,  amount, currency_id,  account_id) VALUES($1,$2,$3,$4,$5,$6,$7)`,
       values: [
         userId,
         description,
@@ -151,7 +153,8 @@ export const createAccount = async (req, res, next) => {
         'completed',
         account_starting_amount,
         currencyId,
-        newAccount.account_name,
+        newAccountId,
+        // newAccount.account_name,
       ],
     };
 
@@ -282,11 +285,21 @@ export const getAccount = async (req, res, next) => {
 
 //******** */
 //addMoneyToAccount
+//endpoint :  http://localhost:5000/api/accounts/add-money/:id?user=userId
+// &account_type=all&limit=0&offset=0
 export const addMoneyToAccount = async (req, res, next) => {
-  console.log(pc.cyanBright('createAccount'));
-  console.log('req.query;', req.query);
+  console.log(pc.cyanBright('addMoneyToAccount'));
 
   const client = await pool.connect(); // Get a client from the pool
+  console.log(
+    'req.query;',
+    req.query,
+    'req.params:',
+    req.params,
+    'req.body:',
+    req.body
+  );
+
   try {
     const { user: userId } = req.query;
     if (!userId) {
@@ -299,7 +312,7 @@ export const addMoneyToAccount = async (req, res, next) => {
     const { id: accountId } = req.params;
 
     if (!accountId) {
-      const message = 'account ID is required.';
+      const message = 'Account ID is required.';
       console.warn(pc.cyanBright(message));
       return res.status(400).json({ status: 400, message });
     }
@@ -307,35 +320,41 @@ export const addMoneyToAccount = async (req, res, next) => {
 
     //si currency no es introducida podria usarse la que es por defecto
 
-    // if (!amount || !currencyCode) {
-    //   const message = 'All fields are required';
-    //   console.warn(pc.cyanBright(message));
-    //   return res.status(400).json({ status: 400, message });
-    // }
+    //QUE PASA SI ACCOUNT ID NO EXISTE PARA ESE USUARIO? desde front end el account id se debe asegurar su existencia?
+    if (!amount || !currencyCode) {
+      const message = 'All fields are required';
+      console.warn(pc.cyanBright(message));
+      return res.status(400).json({ status: 400, message });
+    }
 
     // const newAmountToAdd = Number(amount);
+    const newAmountToAdd = amount;
+    console.log(
+      '🚀 ~ addMoneyToAccount veracion~ newAmountToAdd:',
+      newAmountToAdd
+    );
 
     //CHECK THE CURRENCY OF THE DEPOSIT WITH  THE CURRENCY OF THE ACCOUNT. TO ADD, THEY MUST BE CORRESPONDENT, AND DECIDE WHAT CURRENCY USE TO SAVE INTO THE DATABASE. IF CONVERSION MUST BE DONE , THEN WHAT exchange rate to use, it has to do with the date of the transaction or will be the updated rate?
 
     //hacer una funntion para recuperar currency id, y que tenga indexes de currency
 
-    //currency and account type ids handling (since theses are chosen from a select on the browser frontend, existence should be warant)
+    //currency and account type ids handling (since theses are chosen from a select on the browser frontend, existence should be warranted)
 
     //---check currency existence---------------
-    // const currencyIdResult = await pool.query({
-    //   text: `SELECT currency_id FROM currencies WHERE currency_code = $1`,
-    //   values: [currencyCode],
-    // });
+    const currencyIdResult = await pool.query({
+      text: `SELECT currency_id FROM currencies WHERE currency_code = $1`,
+      values: [currencyCode],
+    });
 
-    // if (currencyIdResult.rows.length === 0) {
-    //   const message = `Currency with code ${currencyCode} was not found.`;
-    //   console.warn(pc.yellowBright(message));
-    //   return res.status(404).json({ status: 404, message });
-    // }
+    if (currencyIdResult.rows.length === 0) {
+      const message = `Currency with code ${currencyCode} was not found.`;
+      console.warn(pc.yellowBright(message));
+      return res.status(404).json({ status: 404, message });
+    }
 
-    // const currencyId = currencyIdResult.rows[0].currency_id;
+    const currencyId = currencyIdResult.rows[0].currency_id;
 
-    // console.log('🚀 ~ createAccount ~ currencyId:', currencyId);
+    console.log('🚀 ~ createAccount ~ currencyId:', currencyId);
 
     //---------*****
     //account id must be provided by the frontend in the request
@@ -384,47 +403,65 @@ export const addMoneyToAccount = async (req, res, next) => {
     // console.log('🚀 ~ createAccount ~ accountTypeId:', accountTypeId);
 
     //----------*******-
+    await client.query('BEGIN');
 
-    //   await client.query('BEGIN');
+    const newAccountBalanceResult = await pool.query({
+      text: `UPDATE user_accounts SET account_balance = (account_balance + $1), currency_id = $2, updated_at = CURRENT_TIMESTAMP  WHERE user_id = $3 AND account_id = $4 RETURNING *`,
+      values: [newAmountToAdd, currencyId, userId, accountId],
+    });
 
-    //   const newAccountBalanceResult = await pool.query({
-    //     text: `UPDATE user_accounts SET account_balance = (account_balance + $1), currency_id = $2, update_at = CURRENT_TIMESTAMP , WHERE user_id = $3 AND account_id = $4 RETURNING *`,
-    //     values: [newAmountToAdd, currencyId, userId, accountId],
-    //   });
+    const accountInfo = newAccountBalanceResult.rows;
+    // console.log(
+    //   'Updated balance account:',
+    //   accountInfo[0].account_balance,
+    //   currencyCode,
+    //   newAmountToAdd
+    // );
 
-    //   const accountInfo = newAccountBalanceResult.rows[0];
-    //   const description = `${accountInfo.account_name} - (Deposit)`;
+    if (accountInfo.length > 0) {
+      console.log(
+        'Updated balance account to:',
+        accountInfo[0].account_balance,
+        currencyCode
+      );
+    } else {
+      const message = 'balance account was not updated';
+      console.warn(pc.red(message));
+      return res.status(403).json({ status: 403, message });
+    }
+    const description = `${accountInfo[0].account_name}-(Deposit)`;
 
     //   //Add  deposit transaction
-    //   const movement_type_id = 2; // represents "income" type movement
+    const movement_type_id = 2; // represents "income" type movement
 
-    //   const transactionDepositQuery = {
-    //     text: `INSERT INTO transactions(user_id, description, movement_type_id, status,  amount, currency_id,  account_name ) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-    //     values: [
-    //       userId,
-    //       description,
-    //       movement_type_id,
-    //       'completed',
-    //       newAmountToAdd,
-    //       currencyId,
-    //       accountInfo.account_name, //source?
-    //     ],
-    //   };
+    const transactionDepositQuery = {
+      text: `INSERT INTO transactions(user_id, description, movement_type_id, status,  amount, currency_id,  account_id ) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      values: [
+        userId,
+        description,
+        movement_type_id,
+        'completed',
+        newAmountToAdd,
+        currencyId,
+        accountId,
+        // accountInfo[0].account_name, //source?
+      ],
+    };
 
-    //   await pool.query(transactionDepositQuery);
+    await pool.query(transactionDepositQuery);
 
-    //   //opcion de crear cuentas en un arreglo y guardarlo en users
-    //   //UPDATE users SET accounts_id = array_cat(accounts, $1), update_dat = CURRENT_TIMESTAMP id=$2 RETURNING *, values:[accounts, userId]
+    //evaluar la opcion de crear cuentas en un arreglo y guardarlo en users
+    //UPDATE users SET accounts_id = array_cat(accounts, $1), update_dat = CURRENT_TIMESTAMP id=$2 RETURNING *, values:[accounts, userId]
 
     //   //transaction confirmed
     //   await client.query('COMMIT');
-    //   //Successfull answer
-    //   const message = `${accountInfo.account_name} money added and transaction registered successfully`
-    //   console.log(pc.cyanBright(message))
-    //   res.status(200).json({
-    //     message,
-    //     data: accountInfo,
-    //   });
+    //Successfull answer
+    const message = `${accountInfo[0].account_name} money was added to account balance and transaction registered successfully`;
+    console.log(pc.cyanBright(message));
+    res.status(200).json({
+      message,
+      data: accountInfo,
+    });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error(

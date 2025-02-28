@@ -5,10 +5,9 @@ import {
   addMoneyToAccount,
 } from '../controllers/accountController.js';
 const router = express.Router();
-
 router.post('/', createAccount);
 router.get('/', getAccount);
-// router.post('/add-money/:id', addMoneyToAccount);
+router.post('/add-money/:id', addMoneyToAccount);
 
 export default router;
 
