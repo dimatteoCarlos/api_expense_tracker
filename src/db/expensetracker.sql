@@ -54,7 +54,9 @@ AND account_type_id = 2
 -- get currency_id from currencies by currency_code
 SELECT currency_id  FROM currencies WHERE currency_code= $1
 
-
+-- get transactions by user_id and between start and today/end dates and search on description, status or account_id
+SELECT * FROM transactions WHERE user_id=$1 AND created_at BETWEEN $2 AND $3 
+      AND (description ILIKE '%'||$4||'%' OR status ILIKE '%'||$4||'%' OR CAST(account_id AS TEXT) ILIKE '%'||$4||'%')
 
 -- de interes
 -- ALTER TABLE transactions

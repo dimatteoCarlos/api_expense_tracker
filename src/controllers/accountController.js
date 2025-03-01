@@ -29,7 +29,6 @@ export const createAccount = async (req, res, next) => {
     }
     //que pasa si el user es undefined o si no existe en las tablas de user? creo que para llegar aqui, dberia pasarse por verifyUser
 
-    await client.query('BEGIN');
     const {
       name: account_name,
       type: account_type_name,
@@ -58,6 +57,7 @@ export const createAccount = async (req, res, next) => {
       return res.status(400).json({ status: 400, message });
     }
 
+    await client.query('BEGIN');
     //search for existent user_accounts by userId and account name
     const accountExistQuery = {
       text: `SELECT * FROM user_accounts WHERE user_id = $1 AND account_name ILIKE $2`,
