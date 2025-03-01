@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+  addTransaction,
   getDashboardInformation,
   getTransaction,
   // createTransaction,
@@ -10,8 +11,8 @@ const router = express.Router();
 
 // const select = true;
 // const middlewareFn = select ? verifyUser : verifyHeaderAuth;
-router.get('/', getTransaction);
-router.post('/', addTransaction);
+// router.get('/', getTransaction);
+// router.post('/', addTransaction);
 router.get('/', getDashboardInformation);
 
 export default router;

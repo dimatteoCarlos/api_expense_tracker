@@ -84,6 +84,16 @@ export const convertToISO = (dateString, format) => {
   // Devolver en formato ISO 8601 (YYYY-MM-DD)
   return `${year}-${month}-${day}`;
 };
+//--------------------------------------------
+export function getMonthName(index) {
+  const month_index= parseInt(index);
+  //add to check is !NaN
+  const monthName = new Date(2000, index - 1).toLocaleDateString('default', {
+    month: 'long',
+  });
+  return monthName;
+  // console.log(monthName);
+}
 
 //---------------
 export function numberToWords(num) {

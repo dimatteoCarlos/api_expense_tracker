@@ -104,11 +104,15 @@ CREATE TABLE IF NOT EXISTS transactions(
 transaction_id SERIAL PRIMARY KEY,
 user_id UUID NOT NULL,
 description TEXT,
-movement_type_id INTEGER NOT NULL,
-status VARCHAR(50) NOT NULL, 
 amount DECIMAL(15,2) NOT NULL, 
+movement_type_id INTEGER NOT NULL,
+transaction_type_id INTEGER NOT NULL
 currency_id INTEGER NOT NULL, 
-account_id INT  REFERENCES user_accounts(account_id) ON DELETE SET NULL ON UPDATE CASCADE, 
+origin_account_id INT  REFERENCES user_accounts(account_id) ON DELETE SET NULL ON UPDATE CASCADE, 
+destine_account_id INT  REFERENCES user_accounts(account_id) ON DELETE SET NULL ON UPDATE CASCADE, 
+status VARCHAR(50) NOT NULL, 
 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 )
 `;
+
+

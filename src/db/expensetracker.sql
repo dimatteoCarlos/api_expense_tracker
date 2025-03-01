@@ -58,6 +58,26 @@ SELECT currency_id  FROM currencies WHERE currency_code= $1
 SELECT * FROM transactions WHERE user_id=$1 AND created_at BETWEEN $2 AND $3 
       AND (description ILIKE '%'||$4||'%' OR status ILIKE '%'||$4||'%' OR CAST(account_id AS TEXT) ILIKE '%'||$4||'%')
 
+--get the total amount of type tr, from transactions by a specific user_id,  grouped by movement_type_id
+SELECT  tr.movement_type_id as id_type, mt.movement_type_name as name_type, SUM(tr.amount) AS totalAmount
+FROM transactions tr
+JOIN movement_types AS mt ON tr.movement_type_id = mt.movement_type_id
+WHERE tr.user_id='430e5635-d1e6-4f53-a104-5575c6e60c81'
+GROUP BY tr.movement_type_id, mt.movement_type_name
+
+--get the total amount of type tr, from transactions by a specific user_id between specific dates  grouped by month and movement_type_id
+SELECT EXTRACT(MONTH FROM created_at) AS month, 
+tr.movement_type_id, mt.movement_type_name, 
+SUM(amount) AS totalAmount
+FROM transactions tr
+JOIN movement_types mt ON tr.movement_type_id = mt.movement_type_id
+WHERE user_id = '430e5635-d1e6-4f53-a104-5575c6e60c81'
+AND created_at BETWEEN '2024-01-01' AND '2025-12-31'
+GROUP BY
+EXTRACT(MONTH FROM created_at), tr.movement_type_id, mt.movement_type_name
+
+
+
 -- de interes
 -- ALTER TABLE transactions
 -- RENAME COLUMN create_at TO created_at;
