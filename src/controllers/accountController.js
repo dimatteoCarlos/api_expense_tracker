@@ -1,4 +1,5 @@
 //createAccount
+//getAccount
 //addMoneyToAccount
 //deleteAccount / not yet done
 
@@ -455,7 +456,7 @@ export const addMoneyToAccount = async (req, res, next) => {
     //   //transaction confirmed
     await client.query('COMMIT');
     //Successfull answer
-    const message = `${accountInfo[0].account_name} money was added to account balance and transaction registered successfully`;
+    const message = `${accountInfo[0].account_name} : ${newAmountToAdd} was added to account balance and transaction registered successfully`;
     console.log(pc.cyanBright(message));
     res.status(200).json({
       message,

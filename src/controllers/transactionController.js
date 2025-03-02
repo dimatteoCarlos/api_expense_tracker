@@ -1,4 +1,4 @@
-//transactionController
+//transactionController: getTransaction, addTransaction, getDashboardInformation
 
 import { pool } from '../db/configDB.js';
 import {
@@ -10,12 +10,9 @@ import { getMonthName, validateAndNormalizeDate } from '../../utils/helpers.js';
 import pc from 'picocolors';
 
 //*********** */
-//getDashboardInformation
-//addTransaction
-//transferMoneyToAccount
 
-//endpoint :  http://localhost:5000/api/transaction/?user=userIdl&startD=sd&endD=ed&search=s&limit=0&offset=0
 //getTransaction
+//endpoint :  http://localhost:5000/api/transaction/?user=userIdl&startD=sd&endD=ed&search=s&limit=0&offset=0
 export const getTransaction = async (req, res, next) => {
   console.log(pc.blueBright('getTransaction'));
 
@@ -27,6 +24,7 @@ export const getTransaction = async (req, res, next) => {
 
     //The toISOString() method of Date instances returns a string representing this date in the date time string format, a simplified format based on ISO 8601, which is always 24 or 27 characters long (YYYY-MM-DDTHH:mm:ss.sssZ or ±YYYYYY-MM-DDTHH:mm:ss.sssZ, respectively). The timezone is always UTC, as denoted by the suffix Z.
     const sevenDaysAgo = _sevenDaysAgo.toISOString().split('T')[0];
+    console.log('🚀 ~ getTransaction ~ sevenDaysAgo:', sevenDaysAgo);
 
     console.log('req.query;', req.query);
     const { user: userId, startD, endD, search } = req.query;
@@ -39,8 +37,12 @@ export const getTransaction = async (req, res, next) => {
     /*%: Es un comodín en SQL que representa cero o más caracteres. Cuando se usa con LIKE, permite buscar patrones parciales. ||: Es el operador de concatenación en PostgreSQL. Se usa para unir cadenas de texto. $4: Representa un parámetro posicional (en este caso, el cuarto parámetro de la consulta).*/
 
     const transactionsInfoResult = await pool.query({
-      text: `SELECT * FROM transactions WHERE user_id=$1 AND created_at BETWEEN $2 AND $3 
-      AND (description ILIKE '%'||$4||'%' OR status ILIKE '%'||$4||'%' OR CAST(account_id AS TEXT) ILIKE '%'||$4||'%')`,
+      text: `SELECT * FROM transactions WHERE user_id=$1
+       AND (created_at BETWEEN $2 AND $3 OR transaction_actual_date BETWEEN $2 AND $3 )
+      AND (description ILIKE '%'||$4||'%' OR status ILIKE '%'||$4||'%'
+       OR CAST(source_account_id AS TEXT) ILIKE '%'||$4||'%' OR CAST(destination_account_id AS TEXT) ILIKE '%'||$4||'%'
+       OR  CAST(transaction_type_id AS TEXT) ILIKE '%'||$4||'%' OR status ILIKE '%'||$4||'%'
+      ) ORDER BY created_at DESC`,
       values: [userId, startDate, endDate, search],
     });
 
@@ -69,24 +71,28 @@ export const getTransaction = async (req, res, next) => {
     return next(createError(code, message));
   }
 };
-
-//http://localhost:5000/api/transaction/account/:id?user=430e5635-d1e6-4f53-a104-5575c6e60c81&account=1
+//-----------------------------
 //addTransaction
+//POST: http://localhost:5000/api/transaction/account/:id?user=430e5635-d1e6-4f53-a104-5575c6e60c81&account=1
+//add a transaction of a specific account?
+
 export const addTransaction = async (req, res, next) => {
-  console.log('addTransaction');
+  console.log(pc.greenBright('addTransaction'));
   const client = await pool.connect(); // Get a client from the pool
   try {
-    const { user: userId } = req.query;
-    const { account: accountId } = req.params;
-    const { desc, amount, source } = req.body;
-    //arreglar la tabla de transactions para incluir el source. Arreglar los queries de get transaction y todos los demas para incorporar source
+    const { user: userId, account: accountQuery } = req.query;
+    const { account: accountParams } = req.params;
+    const { desc, amount, source_accocunt: source } = req.body;
+
+    const accountId = accountParams ?? accountQuery;
 
     if (!userId) {
       return res
         .status(400)
         .json({ status: 400, message: 'User ID is required.' });
     }
-    //que pasa si el user es undefined o si no existe en las tablas de user? creo que para llegar aqui, dberia pasarse por verifyUser
+
+    //que pasa si el user es undefined o si no existe en las tablas de user? creo que para llegar aqui, deberia pasarse por verifyUser
 
     // console.log(
     //   '🚀 ~ createAccount ~ accountStartDateNormalized:',
@@ -94,13 +100,13 @@ export const addTransaction = async (req, res, next) => {
     // );
 
     if (!accountId || !desc || !amount || !source) {
-      const message = 'All fields are required';
+      const message = 'All fields are required (account id, description, amount and source account id';
       console.warn(pc.greenBright(message));
       return res.status(400).json({ status: 400, message });
     }
 
     if (parseFloat(amount) <= 0) {
-      const message = 'Amount should be greater then 0';
+      const message = 'Amount must be greater than 0';
       console.warn(pc.redBright(message));
       return res.status(400).json({ status: 400, message });
     }
@@ -122,7 +128,7 @@ export const addTransaction = async (req, res, next) => {
       accountInfo.account_balance <= 0 ||
       accountInfo.account_balance < parseFloat(amount)
     ) {
-      const message = 'Transaction fialed. Insufficient account balance';
+      const message = 'Transaction failed. Insufficient account balance funds';
       console.warn(pc.redBright(message));
       return res.status(403).json({ status: 403, message });
     }
@@ -159,7 +165,7 @@ export const addTransaction = async (req, res, next) => {
     return next(createError(code, message));
   }
 };
-
+//--------------------------------------------------
 //transferMoneyToAccount
 export const transferMoneyToAccount = async (req, res, next) => {
   console.log(pc.yellowBright('transferMoneyToAccount'));
@@ -260,7 +266,7 @@ export const transferMoneyToAccount = async (req, res, next) => {
     return next(createError(code, message));
   }
 };
-
+//----------------
 //http://localhost:5000/api/transaction/
 //getDashboardInformation
 export const getDashboardInformation = async (req, res, next) => {
@@ -268,80 +274,104 @@ export const getDashboardInformation = async (req, res, next) => {
 
   try {
     const { user: userId } = req.query;
-    let totalIncome = 0,
-      totalExpense = 0,
-      totalBalance = 0;
 
     //   // get the total amount of type transaction, from transactions table by a specific user_id,  grouped by movement_type_id
-    const totalAmountTransactionTypeResult = await pool.query({
+    const totalAmountMovementTypeResult = await pool.query({
       text: `SELECT tr.movement_type_id, mt.movement_type_name, CAST(SUM(tr.amount) AS DECIMAL) AS total_amount FROM transactions tr
    JOIN movement_types mt ON tr.movement_type_id = mt.movement_type_id WHERE user_id = $1 GROUP BY tr.movement_type_id, mt.movement_type_name
   `,
       values: [userId],
     });
 
-    // console.log("🚀 ~ getDashboardInformation ~ totalAmountTransactionTypeResult:", totalAmountTransactionTypeResult)
-    const totalAmountTransactionType = totalAmountTransactionTypeResult.rows;
-    // console.log(
-    //   '🚀 ~ getDashboardInformation ~ totalAmountTransactionType:',
-    //   totalAmountTransactionType
-    // );
+    // console.log("🚀 ~ getDashboardInformation ~ totalAmountMovementTypeResult:", totalAmountMovementTypeResult)
+    const totalAmountMovementType = totalAmountMovementTypeResult.rows;
+    console.log(
+      '🚀 ~ getDashboardInformation ~ totalAmountMovementType:',
+      totalAmountMovementType
+    );
 
-    const totalIncomeInfo = totalAmountTransactionType.filter(
+    const totalIncomeInfo = totalAmountMovementType.filter(
       (type) => type.movement_type_name === 'income'
     );
+
     console.log(
       '🚀 ~ getDashboardInformation ~ totalIncome:',
       totalIncomeInfo[0].total_amount
     );
-    const totalExpenseInfo = totalAmountTransactionType.filter(
+    const totalExpenseInfo = totalAmountMovementType.filter(
       (type) => type.movement_type_id === 1
     ); //expense
     console.log(
       '🚀 ~ getDashboardInformation ~ totalExpense:',
       totalExpenseInfo[0].total_amount
     );
-
-    //   // totalInvestment = totalAmountTransactionType.rows.filter((type)=>(type.name_type=== 'investment')) //expense
-    //   // totalDebt = totalAmountTransactionType.rows.filter((type)=>(type.name_type=== 'debt')) //debt
-    //   // totalPocket = totalAmountTransactionType.rows.filter((type)=>(type.name_type=== 'debt')) //pocket
+    //----
+    const totalInvestmentInfo = totalAmountMovementType.filter(
+      (type) => type.movement_type_name === 'investment'
+    ); //Investment
+    console.log(
+      '🚀 ~ getDashboardInformation ~ totalInvestment:',
+      totalInvestmentInfo[0].total_amount
+    );
+    //----
+    const totalDebtInfo = totalAmountMovementType.filter(
+      (type) => type.movement_type_name === 'debt'
+    ); //Debt
+    console.log(
+      '🚀 ~ getDashboardInformation ~ totalDebt:',
+      totalDebtInfo[0].total_amount
+    );
+    //----
+    const totalPocketInfo = totalAmountMovementType.filter(
+      (type) => type.movement_type_name === 'pocket'
+    ); //Pocket
+    console.log(
+      '🚀 ~ getDashboardInformation ~ totalPocket:',
+      totalPocketInfo[0].total_amount
+    );
 
     //   //movement debts transaction_type: borrow /
     //   // debtor_lend / debtor_borrow /investment_withdraw/investment_deposit/pocket_deposit/pocket_withraw, o sea que la tranasaction tambien tiene que tener el tipo de cuenta?
 
-    const availableBalance = totalIncome - totalExpense;
-    // console.log(
-    //   '🚀 ~ getDashboardInformation ~ availableBalance:',
-    //   totalIncome,
-    //   availableBalance
-    // );
+    const availableBalance =
+      totalIncomeInfo[0].total_amount - totalExpenseInfo[0].total_amount;
+
+    const totalAmounts = {
+      totalBalance: availableBalance,
+      totalIncome: totalIncomeInfo[0].total_amount,
+      totalExpense: totalExpenseInfo[0].total_amount,
+      totalInvestment: totalInvestmentInfo[0].total_amount,
+      totalDebt: totalDebtInfo[0].total_amount,
+      totalPocket: totalPocketInfo[0].total_amount,
+    };
+    console.table([
+      availableBalance,
+      totalIncomeInfo[0].total_amount + 0,
+      totalExpenseInfo[0].total_amount + 0,
+    ]);
 
     //   //Aggregate transactions to sum by transaction movement_type and group by month
     //these are CONSTANTS
     const year = new Date().getFullYear();
     const start_date = new Date(year, 0, 1); //January 1st of the year
     const end_date = new Date(year, 11, 31, 23, 59, 59); //December 31st of the year
-
+    //-----------
     const groupByMonthQuery = {
       text: `SELECT EXTRACT(MONTH FROM tr.created_at) AS month_index, CAST(SUM(tr.amount) AS DECIMAL) AS total_amount, tr.movement_type_id, mt.movement_type_name FROM transactions tr  JOIN movement_types AS mt ON tr.movement_type_id = mt.movement_type_id  WHERE tr.user_id = $1 AND created_at BETWEEN $2 and $3 GROUP BY month_index, tr.movement_type_id, mt.movement_type_name`,
       values: [userId, start_date, end_date],
     };
-
     const amountTypeByMonthResult = await pool.query(groupByMonthQuery);
 
-    const amountTypeByMonth = amountTypeByMonthResult.rows;
+    console.log(
+      '🚀 ~ getDashboardInformation ~ amountTypeByMonthResult:',
+      amountTypeByMonthResult.rows
+    );
 
-    // console.log(
-    //   '🚀 ~ getDashboardInformation ~ amountTypeByMonthResult:',
-    //   amountTypeByMonthResult.rows
-    // );
-
-    // group data by month
-
+    // grouping data by month
     const data = Array.from({ length: 12 }, (_, indx) => {
       const month_index = indx + 1;
-      // console.log('🚀 ~ data ~ month_index:', month_index);
-      const dataByMonth = amountTypeByMonth.filter(
+      console.log('🚀 ~ data ~ month_index:', month_index);
+      const dataByMonth = amountTypeByMonthResult.rows.filter(
         (item) => parseInt(item.month_index) == month_index
       );
       const totalIncomeMonth =
@@ -350,36 +380,61 @@ export const getDashboardInformation = async (req, res, next) => {
       const totalExpenseMonth =
         dataByMonth.find((item) => item.movement_type_name == 'expense')
           ?.total_amount || 0;
-
       const totalDebtMonth =
         dataByMonth.find((item) => item.movement_type_name == 'debt')
-          ?.total_amount || 0;
+          ?.total_amount || 0; //hay que asegurarse que los amount tomados aqui corresponden son a los balances de las cuentas de debtors borrow - lend o lend- borrow. verificar preferencia.
+
       const totalInvestmentMonth =
         dataByMonth.find((item) => item.movement_type_name == 'investment')
           ?.total_amount || 0;
-      // console.log({
-      //   label: getMonthName(Number(month_index)),
-      //   totalIncomeMonth,
-      //   totalExpenseMonth,
-      // });
+
+      console.log({
+        label: getMonthName(Number(month_index)),
+        totalExpenseMonth,
+        totalIncomeMonth,
+        totalBalanceMonth: totalIncomeMonth - totalExpenseMonth,
+        totalInvestmentMonth,
+        totalDebtMonth,
+      });
 
       return {
         label: getMonthName(month_index),
+        totalBalanceMonth: totalIncomeMonth - totalExpenseMonth,
         totalIncomeMonth,
         totalExpenseMonth,
+        totalDebtMonth,
+        totalInvestmentMonth,
       };
     });
 
-    // console.log("🚀 ~ getDashboardInformation ~ data:", data)
-    //   getMonthName(9);
+    //Last transactions
+    const lastTransactionsResult = await pool.query({
+      text: `SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC  LIMIT 30`,
+      values: [userId],
+    });
 
-    const message = 'Dashboard completed successfully.';
+    //Last accounts
+    const lastAccountsResult = await pool.query({
+      text: `SELECT * FROM user_accounts ua JOIN account_types act ON ua.account_type_id = act.account_type_id  WHERE user_id = $1 ORDER BY act.account_type_id, ua.account_id ASC,ua.created_at DESC`,
+      values: [userId],
+    });
+
+    const message = 'Dashboard info completed successfully.';
     console.log(pc.yellowBright(message));
-    res.status(200).json({ status: 200, message });
+    return res.status(200).json({
+      status: 200,
+      message,
+      availableBalance,
+
+      totalAmounts,
+      lastAccounts: lastAccountsResult.rows,
+      lastTransactions: lastTransactionsResult.rows,
+      chartData: data,
+    });
   } catch (error) {
     console.error(
       pc.redBright('Error occured on getting Dashboard Information'),
-      pc.greenBright(error.message || 'something went wrong')
+      pc.greenBright(error.message || 'Something went wrong')
     );
     const { code, message } = handlePostgresError(error);
     return next(createError(code, message));

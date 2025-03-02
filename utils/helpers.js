@@ -86,11 +86,17 @@ export const convertToISO = (dateString, format) => {
 };
 //--------------------------------------------
 export function getMonthName(index) {
-  const month_index= parseInt(index);
-  //add to check is !NaN
-  const monthName = new Date(2000, index - 1).toLocaleDateString('default', {
-    month: 'long',
-  });
+  const month_index = parseInt(index);
+  if (month_index < 1 || month_index > 12 || isNaN(month_index)) {
+    throw new Error('month index must be a number between 1 and 12.');
+  }
+
+  const monthName = new Date(2000, month_index-1).toLocaleDateString(
+    'default',
+    {
+      month: 'long',
+    }
+  );
   return monthName;
   // console.log(monthName);
 }

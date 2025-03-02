@@ -85,7 +85,7 @@ CREATE TABLE debt_movements (
     transaction_debt_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
 
-CREATE TABLE debt_debtor (
+CREATE TABLE debt_debtors (
     debtor_id SERIAL PRIMARY KEY NOT NULL,
     debtor_name VARCHAR(25) NOT NULL,
     debtor_lastname VARCHAR(25) NOT NULL
@@ -108,11 +108,10 @@ amount DECIMAL(15,2) NOT NULL,
 movement_type_id INTEGER NOT NULL,
 transaction_type_id INTEGER NOT NULL
 currency_id INTEGER NOT NULL, 
-origin_account_id INT  REFERENCES user_accounts(account_id) ON DELETE SET NULL ON UPDATE CASCADE, 
-destine_account_id INT  REFERENCES user_accounts(account_id) ON DELETE SET NULL ON UPDATE CASCADE, 
+source_account_id INT  REFERENCES user_accounts(account_id) ON DELETE SET NULL ON UPDATE CASCADE, 
+destination_account_id INT  REFERENCES user_accounts(account_id) ON DELETE SET NULL ON UPDATE CASCADE, 
 status VARCHAR(50) NOT NULL, 
+transaction_actual_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 )
 `;
-
-
