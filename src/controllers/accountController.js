@@ -19,6 +19,7 @@ import { recordTransaction } from '../../utils/recordTransaction.js';
 
 //createAccount
 //to create an account user_accounts table must exist
+//must consider that the type of transactions should be set to deposit or lend. any type of account is acceptable. movement should be investment, budget, debtor, pocket not expense, since it means putting money into the account. by default the destination account is the same new created account.
 
 export const createAccount = async (req, res, next) => {
   console.log(pc.yellowBright('createAccount'));
