@@ -73,18 +73,19 @@ export const getTransaction = async (req, res, next) => {
 };
 //-----------------------------
 //addTransaction
-//POST: http://localhost:5000/api/transaction/account/:id?user=430e5635-d1e6-4f53-a104-5575c6e60c81&account=1
+//POST: http://localhost:5000/api/transaction/add-transaction/:account_id?user=430e5635-d1e6-4f53-a104-5575c6e60c81
 //add a transaction of a specific account?
+//add transaction is a withdraw of any type of account, to any other account
 
 export const addTransaction = async (req, res, next) => {
   console.log(pc.greenBright('addTransaction'));
   const client = await pool.connect(); // Get a client from the pool
   try {
-    const { user: userId, account: accountQuery } = req.query;
-    const { account: accountParams } = req.params;
-    const { desc, amount, source_accocunt: source } = req.body;
+    const { user: userId, account: accountQueryId } = req.query;
+    const { account_id: accountParamsId } = req.params;
+    const { description, amount, currency, transactionActualDate } = req.body;
 
-    const accountId = accountParams ?? accountQuery;
+    const accountId = accountParamsId ?? accountQueryId; //sorce account or from account
 
     if (!userId) {
       return res
@@ -99,11 +100,13 @@ export const addTransaction = async (req, res, next) => {
     //   accountStartDateNormalized
     // );
 
-    if (!accountId || !desc || !amount || !source) {
-      const message = 'All fields are required (account id, description, amount and source account id';
+    if (!accountId || !description || !amount) {
+      const message = 'Account ID, description  and amount fields are required';
       console.warn(pc.greenBright(message));
       return res.status(400).json({ status: 400, message });
     }
+
+    console;
 
     if (parseFloat(amount) <= 0) {
       const message = 'Amount must be greater than 0';
@@ -112,11 +115,12 @@ export const addTransaction = async (req, res, next) => {
     }
 
     const accountResult = await pool.query({
-      text: `SELECT  * FROM user_accounts WHERE account_id = $1`,
+      text: `SELECT  *  FROM user_accounts WHERE account_id = $1`,
       values: [accountId],
     });
 
     const accountInfo = accountResult.rows[0];
+    console.log('accountInfo:', accountInfo);
 
     if (!accountInfo) {
       const message = 'Invalid account information';
@@ -124,33 +128,98 @@ export const addTransaction = async (req, res, next) => {
       return res.status(400).json({ status: 400, message });
     }
 
-    if (
-      accountInfo.account_balance <= 0 ||
-      accountInfo.account_balance < parseFloat(amount)
-    ) {
-      const message = 'Transaction failed. Insufficient account balance funds';
+    //---
+    //check for currency
+    const currencyCode = currency ?? 'usd';
+    const currencyInfoResult = await pool.query({
+      text: `SELECT * FROM currencies`,
+      values: [],
+    });
+
+    const registeredCurrencyInfo = currencyInfoResult.rows;
+
+    const currencyObj = registeredCurrencyInfo.filter(
+      (c) => c.currency_code === currencyCode
+    );
+    
+    if (!currencyObj) {
+      const message = `Currency code ${currencyCode} is not registered. Check for registered currency codes`;
       console.warn(pc.redBright(message));
-      return res.status(403).json({ status: 403, message });
+      return res.status(404).json({ status: 404, message });
+    }
+    
+    const accountCurrencyId = accountInfo.currency_id;
+    const accountCurrencyCode = registeredCurrencyInfo.filter(
+      (c) => c.currency_id === accountCurrencyId
+    )[0].currency_code;
+
+    
+    console.log('🚀 ~ addTransaction ~ currencyObj:',  accountCurrencyCode, );
+
+    if (currencyObj.currency_id !== accountInfo.currency_id) {
+      const message = `Currency code ${currencyCode} is not the same as the registered account currency code ${accountCurrencyCode}. Check the entered currency or let's exchange with a proper rate...yet to develop`;
+      console.warn(pc.redBright(message));
+      return res.status(400).json({ status: 400, message });
     }
 
-    await client.query('BEGIN');
-    await pool.query({
-      text: `UPDATE user_accounts SET account_balance=(account_balance - $1), updated_at = CURRENT_TIMESTAMP WHERE account_id= $2`,
-      values: [amount, accountId],
-    });
+    console.log(
+      'currency verified. ',
+      accountCurrencyCode,
+      'and',
+      currencyCode
+    );
 
-    await pool.query({
-      text: `INSERT INTO transactions(user_id, description, type, status, amount, account_id) VALUES($1,$2,$3,$4,$5,$6) `,
-      values: [userId, desc, 'expense', 'completed', amount, accountId],
-    });
+    //---end of currency checking--------
+    // if (
+    //   accountInfo.account_balance <= 0 ||
+    //   accountInfo.account_balance < parseFloat(amount)
+    // ) {
+    //   const message = `Transaction failed. Insufficient funds on ${accountInfo.account_name}. Available funds: ${accountInfo.account_balance}`;
+    //   console.warn(pc.redBright(message));
+    //   return res.status(403).json({ status: 403, message }); // code 403: forbidden http request
+    // }
+
+    //start the transaction
+    // await client.query('BEGIN');
+    // await pool.query({
+    //   text: `UPDATE user_accounts SET account_balance=(account_balance - $1), updated_at = CURRENT_TIMESTAMP WHERE account_id= $2`,
+    //   values: [amount, accountId],
+    // });
+
+    // con el account_id: se ubica account_type_id y el account_type_name.// Con el movement_type_name: movement_type_id o viceversa.//transaction_type_name: id, si es withdraw entonces se resta en la cuanta source y se suma en cta destination, y viceversa con deposito. / destination, seria: si es expense -> w de ac s y dep en categoria o budget?/ si es income: dep de bank acc s y with de source income // si es debt: puede ser w o d. w->borrow d->lend y la cuenta seria tipo debtor, y la transaction puede ser w o d. la fuente seria el debtor, y la destination puede ser cualquiera de las otras cuentas / lo mismo para pocket /  como se saca los balance para cada tipo de cuenta. las cuentas categoria? son subcuentas?
+
+    // const movement_type_id = 1, //expense
+    //   status = 'completed',
+    //   source_account_id = accountId,
+    //   transaction_type_id = 1; //withdraw
+    // destination_account_id = 7; //cash
+    // const transaction_actual_date = transactionActualDate ?? new Date();
+    // const currencyFinalId = accountInfo.currency_id;
+
+    // await pool.query({
+    //   text: `INSERT INTO transactions(user_id, description, movement_type_id, status, amount,currency_id, source_account_id,transaction_type_id, destination_account_id, transaction_actual_date) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    //   values: [
+    //     userId,
+    //     description,
+    //     movement_type_id,
+    //     status,
+    //     amount,
+    //     currencyFinalId,
+    //     source_account_id,
+    //     transaction_type_id,
+    //     destination_account_id,
+    //     transaction_actual_date,
+    //   ],
+    // });
+
     //temporary account_id for source
 
-    await pool.query({
-      text: `UPDATE user_accounts SET account_balance=(account_balance + $1), updated_at = CURRENT_TIMESTAMP WHERE account_id= $2`,
-      values: [amount, accountId],
-    });
+    // await pool.query({
+    //   text: `UPDATE user_accounts SET account_balance=(account_balance + $1), updated_at = CURRENT_TIMESTAMP WHERE account_id= $2`,
+    //   values: [amount, accountId],
+    // });
 
-    await client.query('COMMIT');
+    // await client.query('COMMIT');
 
     const message = 'Transaction completed successfully.';
     console.log(pc.greenBright(message));
