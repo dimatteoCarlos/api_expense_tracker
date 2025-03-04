@@ -111,7 +111,9 @@ export async function tblUserRoles() {
 
     const exists = await tableExists(tblName);
     if (!exists) {
-      console.log(pc.cyan(`\" ${tblName}\" table does not exist. Creating it...`));
+      console.log(
+        pc.cyan(`\" ${tblName}\" table does not exist. Creating it...`)
+      );
       const createQuery = `CREATE TABLE user_roles(user_role_id SERIAL PRIMARY KEY  NOT NULL, user_role_name VARCHAR(15) NOT NULL CHECK (user_role_name IN ('user', 'admin', 'superadmin') ) )`;
       await pool.query(createQuery);
     }
@@ -193,7 +195,7 @@ export async function tblAccountTypes() {
       account_type_name) VALUES ($1,$2)`;
       const values = [type.account_type_id, type.account_type_name];
       await pool.query(queryText, values);
-      console.log(pc.orange(`inserted: ${tblName}, ${type.account_type_name}`));
+      console.log(pc.green(`inserted: ${tblName}, ${type.account_type_name}`));
     }
 
     //confirm transaction
@@ -209,8 +211,7 @@ export async function tblAccountTypes() {
 //tblAccountTypes();
 
 //---
-'expense', 'income', 'investment', 'debt', 'pocket';
-//transactions
+//movement_types
 export async function tblMovementTypes() {
   const movementTypeValues = [
     { movement_type_id: 1, movement_type_name: 'expense' },
@@ -218,9 +219,11 @@ export async function tblMovementTypes() {
     { movement_type_id: 3, movement_type_name: 'investment' },
     { movement_type_id: 4, movement_type_name: 'debt' },
     { movement_type_id: 5, movement_type_name: 'pocket' },
+    { movement_type_id: 6, movement_type_name: 'transfer' },
+    { movement_type_id: 7, movement_type_name: 'receive' },
   ];
   const tblName = 'movement_types';
-  const minCount = movementTypeValues.length;
+  const minCount = movementTypeValues.length - 1;
 
   try {
     //verify if table exists
@@ -230,12 +233,10 @@ export async function tblMovementTypes() {
     const exists = await tableExists(tblName);
 
     if (!exists) {
-      console.log(
-        pc.purple(`${tblName} table does not exist. Creating it...'`)
-      );
+      console.log(pc.yellow`${tblName} table does not exist. Creating it...'`);
       const createQuery = `CREATE TABLE movement_types (
-        movement_type_id SERIAL PRIMARY KEY NOT NULL,
-        movement_type_name VARCHAR(50) NOT NULL 
+        movement_type_id INT PRIMARY KEY NOT NULL,
+        movement_type_name VARCHAR(50) NOT NULL CHECK(movement_type_name IN ('expense','income','investment','debt','pocket','transfer','receive'))
 )`;
       await pool.query(createQuery);
     }
@@ -243,7 +244,7 @@ export async function tblMovementTypes() {
     //is it already populated
     const isPopulated = await isTablePopulated(tblName, minCount);
     if (isPopulated) {
-      console.log(pc.cyan(`${tblName} table is ready.`));
+      console.log(pc.yellowBright(`${tblName} table is already populated.`));
       return;
     }
 
@@ -255,17 +256,77 @@ export async function tblMovementTypes() {
       movement_type_name) VALUES ($1,$2)`;
       const values = [type.movement_type_id, type.movement_type_name];
       await pool.query(queryText, values);
-      console.log(`inserted: ${tblName}, ${type.movement_type_name}`);
+      console.log(pc.green(`inserted: ${tblName}, ${type.movement_type_name}`));
     }
 
     //confirm transaction
     await pool.query('COMMIT');
-    console.log(pc.bold(pc.greenBright('All tuples inserted successfully.')));
+    console.log(pc.yellow('All tuples inserted successfully.'));
   } catch (
     error // Revertir la transacción en caso de error
   ) {
     await pool.query('ROLLBACK');
-    console.error(pc.redBright('Error inserting tuples:', error));
+    console.error('Error inserting tuples:', error);
   }
 }
 //tblMovementTypes();
+
+//--
+//transactionTypes
+export async function tbltransactionTypes() {
+  const transactionTypeValues = [
+    { transaction_type_id: 1, transaction_type_name: 'withdraw' },
+    { transaction_type_id: 2, transaction_type_name: 'deposit' },
+    { transaction_type_id: 3, transaction_type_name: 'lend' },
+    { transaction_type_id: 4, transaction_type_name: 'borrow' },
+  ];
+
+  const tblName = 'transaction_types';
+  const minCount = transactionTypeValues.length - 1;
+
+  try {
+    //verify if table exists
+    if (!isValidTableName(tblName)) {
+      throw new Error('Invalid table name');
+    }
+    const exists = await tableExists(tblName);
+
+    if (!exists) {
+      console.log(pc.yellow`${tblName} table does not exist. Creating it...'`);
+      const createQuery = `CREATE TABLE transaction_types(transaction_type_id SERIAL PRIMARY KEY NOT NULL,
+        transaction_type_name VARCHAR(10) NOT NULL)`;
+      await pool.query(createQuery);
+    }
+
+    //is it already populated
+    const isPopulated = await isTablePopulated(tblName, minCount);
+    if (isPopulated) {
+      console.log(pc.yellowBright(`${tblName} table is already populated.`));
+      return;
+    }
+
+    //initiate a transaction
+    await pool.query('BEGIN');
+    //run through the data and insert every tuple
+    for (const type of transactionTypeValues) {
+      const queryText = `INSERT INTO transaction_types(transaction_type_id,
+      transaction_type_name) VALUES ($1,$2)`;
+      const values = [type.transaction_type_id, type.transaction_type_name];
+      await pool.query(queryText, values);
+      console.log(`inserted: ${tblName}, ${type.transaction_type_name}`);
+    }
+
+    //confirm transaction
+    await pool.query('COMMIT');
+    console.log(pc.yellow('All tuples inserted successfully.'));
+  } catch (
+    error // reverse transaction in case of error
+  ) {
+    await pool.query('ROLLBACK');
+    console.error('Error inserting tuples:', error);
+  }
+}
+//tblTransactionTypes();
+
+
+
