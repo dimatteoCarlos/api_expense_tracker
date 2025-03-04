@@ -16,5 +16,3 @@ router.post('/add-transaction/:account_id', addTransaction);
 router.put('/transfer-money', transferMoneyToAccount);
 
 export default router;
-
-
