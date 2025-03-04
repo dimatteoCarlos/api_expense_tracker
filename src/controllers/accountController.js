@@ -146,6 +146,7 @@ export const createAccount = async (req, res, next) => {
 
     //BUSCAR currncy_id, source_id con base en los datos suministrados en el body
     //Search currency_id and source_id base on body data
+    //REVISAR MODIFICACIONES EN TRANSACTIONS
     const initialDepositQuery = {
       text: `INSERT INTO transactions(user_id, description, movement_type_id, status,  amount, currency_id,  account_id) VALUES($1,$2,$3,$4,$5,$6,$7)`,
       values: [
@@ -401,7 +402,7 @@ export const addMoneyToAccount = async (req, res, next) => {
     // accountTypeId = accountTypeIdResult.rows[0].account_type_id;
     // console.log('🚀 ~ createAccount ~ accountTypeId:', accountTypeId);
 
-    //----------*******-
+    //--------------------------
     await client.query('BEGIN');
 
     const newAccountBalanceResult = await pool.query({
@@ -433,7 +434,7 @@ export const addMoneyToAccount = async (req, res, next) => {
 
     //   //Add  deposit transaction
     const movement_type_id = 2; // represents "income" type movement
-
+    //REVISAR CON LAS MODIFICACIONES HECHAS
     const transactionDepositQuery = {
       text: `INSERT INTO transactions(user_id, description, movement_type_id, status,  amount, currency_id,  account_id ) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
       values: [
