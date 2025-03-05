@@ -324,7 +324,7 @@ export const transferMoneyToAccount = async (req, res, next) => {
         descriptionTransfered,
         movement_type_id,
         status,
-        numericAmount,
+        -numericAmount,
         currencyFinalId,
         source_account_id,
         transaction_type_id,
