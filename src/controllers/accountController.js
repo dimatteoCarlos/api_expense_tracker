@@ -215,7 +215,7 @@ export const getAccount = async (req, res, next) => {
     console.log('req.query;', req.query);
     const { user: userId, type } = req.query;
 
-    const { accountId:account_id } = req.params;
+    const { accountId: account_id } = req.params;
     console.log('🚀 ~ getAccount ~ accountId:', account_id, req.params);
 
     if (!userId) {
@@ -255,8 +255,8 @@ export const getAccount = async (req, res, next) => {
         message: `${message}`,
         data: foundAccountId,
       });
-    } 
-    
+    }
+
     if (type) {
       const typeAccountIdResult = await pool.query({
         text: `SELECT account_type_id FROM account_types WHERE account_type_name = $1`,
@@ -372,7 +372,11 @@ export const addMoneyToAccount = async (req, res, next) => {
       console.warn(pc.cyanBright(message));
       return res.status(400).json({ status: 400, message });
     }
-    const { amount, currency: currencyCode } = req.body;
+    const { amount, currency: currencyCode, sourceAccountId, date } = req.body;
+
+    const transactionActualDate = date
+      ? validateAndNormalizeDate(date)
+      : new Date();
 
     //si currency no es introducida podria usarse la que es por defecto
 
@@ -382,9 +386,14 @@ export const addMoneyToAccount = async (req, res, next) => {
       console.warn(pc.cyanBright(message));
       return res.status(400).json({ status: 400, message });
     }
+    if (amount < 0) {
+      const message = 'amount must be greater than 0';
+      console.warn(pc.redBright(message));
+      return res.status(400).json({ status: 400, message });
+    }
 
     // const newAmountToAdd = Number(amount);
-    const newAmountToAdd = amount;
+    const newAmountToAdd = parseFloat(amount);
     console.log('🚀 ~ addMoneyToAccount ~ newAmountToAdd:', newAmountToAdd);
 
     //CHECK THE CURRENCY OF THE DEPOSIT WITH  THE CURRENCY OF THE ACCOUNT. TO ADD, THEY MUST BE CORRESPONDENT, AND DECIDE WHAT CURRENCY USE TO SAVE INTO THE DATABASE. IF CONVERSION MUST BE DONE , THEN WHAT exchange rate to use, it has to do with the date of the transaction or will be the updated rate?
@@ -409,7 +418,7 @@ export const addMoneyToAccount = async (req, res, next) => {
 
     //--------account checking existence
     //account id must be provided by the frontend in the request
-    // //search for existent OF user_accounts by userId and account name
+    //search for existent OF user_accounts by userId and account name
     // const accountExistQuery = {
     //   text: `SELECT * FROM user_accounts WHERE user_id = $1 AND account_name ILIKE $2`,
     //   values: [userId, `%${account_name}%`],
@@ -456,62 +465,71 @@ export const addMoneyToAccount = async (req, res, next) => {
 
     //--------------------------
     await client.query('BEGIN');
-
     const newAccountBalanceResult = await pool.query({
       text: `UPDATE user_accounts SET account_balance = (account_balance + $1), currency_id = $2, updated_at = CURRENT_TIMESTAMP  WHERE user_id = $3 AND account_id = $4 RETURNING *`,
       values: [newAmountToAdd, currencyId, userId, accountId],
     });
 
-    const accountInfo = newAccountBalanceResult.rows;
+    const accountBalance = newAccountBalanceResult.rows;
     console.log(
       'Updated balance account:',
-      accountInfo[0].account_balance,
+      accountBalance,
+      accountBalance[0].account_balance,
       currencyCode,
       newAmountToAdd
     );
 
-    if (accountInfo.length > 0) {
+    const accountInfo = accountBalance[0];
+    console.log('🚀 ~ addMoneyToAccount ~ accountInfo:', accountInfo);
+
+    if (accountBalance.length > 0) {
       console.log(
         'Updated balance account to:',
-        accountInfo[0].account_balance,
+        accountInfo.account_balance,
         currencyCode
       );
     } else {
       const message =
         'Balance account was not updated. Check account id number';
       console.warn(pc.red(message));
+      await client.query('ROLLBACK');
       return res.status(403).json({ status: 403, message });
     }
 
     //Add  deposit transaction
 
-    const transactionOptions = {
+    //-----------Register trasaction
+    //Add deposit transaction
+
+    const transactionOptionAddMoneyToAccount = {
       userId,
-      description: `${accountInfo[0].account_name}-(Deposit)`,
-      movement_type_id,
+      description: `${accountInfo.account_name}-(Received Deposit)`,
+      movement_type_id: 7, //income, receive
       status: 'complete',
-      amount,
-      currencyId,
-      source_account_id,
-      transaction_type_id,
-      destination_account_id,
-      transaction_actual_date,
+      amount: newAmountToAdd,
+      currency_id: currencyId,
+      source_account_id: sourceAccountId || accountId,
+      //definir valor de este atributo, sera source of income, cash account, debtor account, category or pocket account, other account
+      transaction_type_id: 2, //deposit or lend
+      destination_account_id: accountId,
+      transaction_actual_date: transactionActualDate,
     };
 
-    const transactionResult = await recordTransaction(options);
-    const {} = options;
+    const createdAccountTransaction = await recordTransaction(
+      transactionOptionAddMoneyToAccount
+    );
 
-    //evaluar la opcion de crear cuentas en un arreglo y guardarlo en users
-    //UPDATE users SET accounts_id = array_cat(accounts, $1), update_dat = CURRENT_TIMESTAMP id=$2 RETURNING *, values:[accounts, userId]
+    console.log('🚀  ~ createdAccountTransaction:', createdAccountTransaction);
 
-    //   //transaction confirmed
+    //transaction confirmed
     await client.query('COMMIT');
+
     //Successfull answer
-    const message = `${accountInfo[0].account_name} : ${newAmountToAdd} was added to account balance and transaction registered successfully`;
+    const message = `${accountInfo.account_name} : ${newAmountToAdd} was added to account balance and transaction registered successfully`;
     console.log(pc.cyanBright(message));
     res.status(200).json({
       message,
-      data: accountInfo,
+      data: { accountInfo, transactionOptionAddMoneyToAccount },
     });
   } catch (error) {
     await client.query('ROLLBACK');
