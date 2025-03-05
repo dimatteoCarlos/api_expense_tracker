@@ -6,6 +6,7 @@ import {
 } from '../controllers/accountController.js';
 const router = express.Router();
 router.post('/', createAccount);
+router.get('/:accountId', getAccount);
 router.get('/', getAccount);
 router.post('/add-money/:id', addMoneyToAccount);
 
