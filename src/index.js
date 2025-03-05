@@ -11,9 +11,12 @@ import {
   tblAccountTypes,
   tblCurrencies,
   tblMovementTypes,
+  tbltransactionTypes,
   tblUserRoles,
 } from './db/populateDB.js';
 import pc from 'picocolors';
+import { createMainTables } from './db/createTables.js';
+// import { createMainTables } from './db/createTables.js';
 
 dotenv.config();
 // interface CustomError extends Error {status?:number}
@@ -80,6 +83,33 @@ async function initializeDatabase() {
     await tblUserRoles();
     await tblAccountTypes();
     await tblMovementTypes();
+    await tbltransactionTypes();
+
+    //let's create main tables
+    //   const {
+    //     {tblName:UserAccounts,
+    //     // {tblName:Movements,
+    //     // {tblName:ExpenseMovements,
+    //     // {tblName:ExpenseCategories,
+    //     // {tblName:IncomeMovements,
+    //     // {tblName:IncomeSources,
+    //     // {tblName:Investment_movements,
+    //     // {tblName:Debt_movements,
+    //     // {tblName:Debt_debtors,
+    //     // {tblName:Pocket_movements,
+    //     // {tblName:Transactions,
+    //  } = createMainTables;
+
+    //hacer un promise.all?
+    //  createMainTables.map(async (item, ind)=>{
+    //   await pool.query(item.table)
+    //   console.log(ind, item.tblName)
+    //  })
+
+    //  await pool.query(createMainTables[0].table)
+
+    // await pool.query({text:createMainTables.tblUserAccounts, values:[]});
+    // console.log(createMainTables.tblUserAccounts);
 
     console.log(pc.greenBright('Base de datos inicializada correctamente.'));
   } catch (error) {
@@ -94,6 +124,7 @@ async function initializeDatabase() {
 // Server starts here. Inicializar la base de datos y luego iniciar el servidor
 
 await checkConnection();
+
 await initializeDatabase()
   .then(() => {
     // Iniciar el servidor
@@ -102,7 +133,7 @@ await initializeDatabase()
     });
   })
   .catch((error) => {
-    console.erro(pc.red('Critical error during initialization:', error));
+    console.error(pc.red('Critical error during initialization:', error));
     process.exit(1); // Salir del proceso si hay un error crítico
   });
 

@@ -111,7 +111,7 @@ export const addTransaction = async (req, res, next) => {
       console.warn(pc.redBright(message));
       return res.status(400).json({ status: 400, message });
     }
-
+    //Get account info
     const accountResult = await pool.query({
       text: `SELECT  *  FROM user_accounts WHERE account_id = $1`,
       values: [accountId],
@@ -121,9 +121,9 @@ export const addTransaction = async (req, res, next) => {
     console.log('accountInfo:', accountInfo);
 
     if (!accountInfo) {
-      const message = 'Invalid account information';
+      const message = 'Invalid account information. Account not found';
       console.warn(pc.redBright(message));
-      return res.status(400).json({ status: 400, message });
+      return res.status(404).json({ status: 404, message });
     }
 
     //---
@@ -177,13 +177,12 @@ export const addTransaction = async (req, res, next) => {
     }
 
     //start the transaction
+
     await client.query('BEGIN');
     await pool.query({
       text: `UPDATE user_accounts SET account_balance=(account_balance - $1), updated_at = CURRENT_TIMESTAMP WHERE account_id= $2`,
       values: [amount, accountId],
     });
-
-    // con el account_id: se ubica account_type_id y el account_type_name.// Con el movement_type_name: movement_type_id o viceversa.//transaction_type_name: id, si es withdraw entonces se resta en la cuanta source y se suma en cta destination, y viceversa con deposito. / destination, seria: si es expense -> w de ac s y dep en categoria o budget?/ si es income: dep de bank acc s y with de source income // si es debt: puede ser w o d. w->borrow d->lend y la cuenta seria tipo debtor, y la transaction puede ser w o d. la fuente seria el debtor, y la destination puede ser cualquiera de las otras cuentas / lo mismo para pocket /  como se saca los balance para cada tipo de cuenta. las cuentas categoria? son subcuentas?
 
     const movement_type_id = 1, //expense
       status = 'completed',
@@ -224,6 +223,9 @@ export const addTransaction = async (req, res, next) => {
     );
     const { code, message } = handlePostgresError(error);
     return next(createError(code, message));
+  } finally {
+    // Release the client back to the pool
+    client.release();
   }
 };
 //--------------------------------------------------
@@ -312,7 +314,7 @@ export const transferMoneyToAccount = async (req, res, next) => {
     const destination_account_id = to_account; //cash
     const transaction_actual_date = transactionActualDdate ?? new Date();
     const currencyFinalId = 3;
-    
+
     // const currencyFinalId = accountInfo.currency_id;
 
     const transactionResult = await pool.query({
@@ -334,36 +336,35 @@ export const transferMoneyToAccount = async (req, res, next) => {
     console.log(transactionResult.rows);
 
     //-------------------
-     const descriptionReceived = `Received (from ${fromAccountInfo.account_name} deposit to ${toAccountInfo.rows[0].account_name})`;
+    const descriptionReceived = `Received (from ${fromAccountInfo.account_name} deposit to ${toAccountInfo.rows[0].account_name})`;
 
-     const movement_type_id_to = 7, //transfer
-    //  status_to = 'completed',
-    //  source_account_id = from_account,
-     transaction_type_id_to = 2; //deposit
-  //  const destination_account_id = to_account; //cash
-  //  const transaction_actual_date = transactionActualDdate ?? new Date();
-  //  const currencyFinalId = 3;
-   
-   // const currencyFinalId = accountInfo.currency_id;
+    const movement_type_id_to = 7, //transfer
+      //  status_to = 'completed',
+      //  source_account_id = from_account,
+      transaction_type_id_to = 2; //deposit
+    //  const destination_account_id = to_account; //cash
+    //  const transaction_actual_date = transactionActualDdate ?? new Date();
+    //  const currencyFinalId = 3;
 
-   const transactionResultReceived = await pool.query({
-     text: `INSERT INTO transactions(user_id, description, movement_type_id, status, amount,currency_id, source_account_id,transaction_type_id,destination_account_id, transaction_actual_date) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-     values: [
-       userId,
-       descriptionReceived,
-       movement_type_id_to,
-       status,
-       numericAmount,
-       currencyFinalId,
-       source_account_id,
-       transaction_type_id_to,
-       destination_account_id,
-       transaction_actual_date,
-     ],
-   });
+    // const currencyFinalId = accountInfo.currency_id;
 
-   console.log(transactionResultReceived.rows);
+    const transactionResultReceived = await pool.query({
+      text: `INSERT INTO transactions(user_id, description, movement_type_id, status, amount,currency_id, source_account_id,transaction_type_id,destination_account_id, transaction_actual_date) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      values: [
+        userId,
+        descriptionReceived,
+        movement_type_id_to,
+        status,
+        numericAmount,
+        currencyFinalId,
+        source_account_id,
+        transaction_type_id_to,
+        destination_account_id,
+        transaction_actual_date,
+      ],
+    });
 
+    console.log(transactionResultReceived.rows);
 
     await client.query('COMMIT');
 
@@ -378,6 +379,9 @@ export const transferMoneyToAccount = async (req, res, next) => {
     );
     const { code, message } = handlePostgresError(error);
     return next(createError(code, message));
+  } finally {
+    // Release the client back to the pool
+    client.release();
   }
 };
 //----------------

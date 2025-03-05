@@ -77,8 +77,26 @@ GROUP BY
 EXTRACT(MONTH FROM created_at), tr.movement_type_id, mt.movement_type_name
 
 
+-- change the check restriction on movment_types table
+ALTER TABLE movement_types
+DROP CONSTRAINT movement_types_movement_type_name_check
 
--- de interes
+ALTER TABLE movement_types
+ADD CONSTRAINT movment_types_movement_type_name_check
+CHECK (movement_type_name IN ('expense', 'income', 'investment', 'debt', 'pocket', 'transfer', 'receive'));
+
+-- TO GET THE RESTRICTION NAME
+SELECT constraint_name
+FROM information_schema.table_constraints
+WHERE table_name = 'movement_types' AND constraint_type = 'CHECK';
+
+--TO ADD CONSTRAINT
+-- ALTER TABLE transactions
+-- ADD CONSTRAINT REFERENES user_accounts(account_id) ON DELETE SET NULL ON UPDATE CASCADE,
+-- FOREIGN KEY account_id
+-- REFERENCES tabla_destino (columna_destino);
+
+-- TO RENAME A COLUMN
 -- ALTER TABLE transactions
 -- RENAME COLUMN create_at TO created_at;
 
