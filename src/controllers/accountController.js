@@ -202,23 +202,61 @@ export const createAccount = async (req, res, next) => {
     return next(createError(code, message));
   } finally {
     client.release(); //always release the client back to the pool
-  } 
+  }
 };
 
 //*********** */
 //getAccount
+// get the accounts of entered type,
 export const getAccount = async (req, res, next) => {
   console.log(pc.magentaBright('getAccount'));
 
   try {
     console.log('req.query;', req.query);
     const { user: userId, type } = req.query;
+
+    const { accountId:account_id } = req.params;
+    console.log('🚀 ~ getAccount ~ accountId:', account_id, req.params);
+
     if (!userId) {
       return res
         .status(400)
         .json({ status: 400, message: 'User ID is required.' });
     }
 
+    if (!!account_id) {
+      const accountIdResult = await pool.query({
+        text: `SELECT * FROM user_accounts WHERE account_id = $1`,
+        values: [account_id],
+      });
+      console.log(
+        '🚀 ~ getAccount ~ typeAccountIdResult:',
+        accountIdResult.rows
+      );
+
+      const accountIdExists = accountIdResult.rows.length > 0;
+      console.log('🚀 ~ getAccount ~ typeAccountIdExists:', accountIdExists);
+
+      if (!accountIdExists && !type) {
+        const message = `Account with id ${account_id} was not found.`;
+        console.warn(pc.magentaBright(message));
+        return res.status(404).json({ status: 404, message });
+      }
+
+      const foundAccountId = accountIdResult.rows[0];
+
+      console.log('🚀 ~ getAccount ~ AccountId:', foundAccountId);
+
+      //Successfull answer.
+      const message = `${foundAccountId.account_name} account was successfully found with id ${account_id} for user ${userId}`;
+      console.log(pc.magentaBright(message));
+
+      return res.status(200).json({
+        message: `${message}`,
+        data: foundAccountId,
+      });
+    } 
+    
     if (type) {
       const typeAccountIdResult = await pool.query({
         text: `SELECT account_type_id FROM account_types WHERE account_type_name = $1`,
