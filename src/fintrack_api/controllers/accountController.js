@@ -6,6 +6,7 @@ import {
   handlePostgresError,
 } from '../../../utils/errorHandling.js';
 import { pool } from '../../db/configDB.js';
+import { validateAndNormalizeDate } from '../../../utils/helpers.js';
 
 //incomeSourceController
 //post: /api/fintrack/account/new_account?user='UUID'
@@ -27,24 +28,43 @@ export const createAccount = async (req, res, next) => {
       return res.status(400).json({ status: 400, message });
     }
     //account basic data
-    const {
+    let {
       type: account_type_name,
       name,
       currency: currency_code,
       amount,
       date,
     } = req.body;
-    const account_start_date = date ? date : new Date();
-    const account_starting_amount = parseFloat(amount) ?? 0.0;
-    console.log('🚀 ~ createAccount ~ account_start_date:', account_start_date);
+
+    let account_start_date = date ? date : new Date();
+
+    const account_starting_amount = amount ? parseFloat(amount) : 0.0;
+
+    console.log(
+      '🚀 ~ createAccount ~ account_start_date:',
+      account_start_date,
+      account_starting_amount
+    );
 
     console.log(
       account_type_name,
       account_type_name.length,
       account_type_name === 'category_budget'
     );
-    //account name convention for each account type
 
+    //attribute convention for each account type
+    //pocket_saving account definir bien el uso de amount para pocket. Deberia contemplar un amount como monto inicial de la cuenta de ahorro y asi sobre este hacer balance.
+
+    amount =
+      account_type_name === 'pocket_saving'
+        ? parseFloat(req.body.target)
+        : account_starting_amount;
+
+    account_start_date =
+      account_type_name === 'pocket_saving' ? new Date() : date;
+    console.log('🚀 ~ createAccount ~ account_start_date:', account_start_date);
+
+    //category_budget account
     const account_name =
       account_type_name === 'category_budget'
         ? name + '_' + req.body.nature
@@ -54,12 +74,12 @@ export const createAccount = async (req, res, next) => {
     //date validation
     //validar que la fecha no sea mayor que el proximo dia habil? o que no sobrepase el lunes de la prox semana? o no sea mayor que el dia de hoy? o puede ser futura pero en el mismo mes actual? o libre para realizar simulaciones, aunque esto en caso de tener que hacer conversiones habria que preverlo?
 
-    // const accountStartDateNormalized =
-    //   validateAndNormalizeDate(account_start_date);
-    // console.log(
-    //   '🚀 ~ createAccount ~ accountStartDateNormalized:',
-    //   accountStartDateNormalized
-    // );
+    const accountStartDateNormalized =
+      validateAndNormalizeDate(account_start_date);
+    console.log(
+      '🚀 ~ createAccount ~ accountStartDateNormalized:',
+      accountStartDateNormalized
+    );
     //---
 
     //currency and account_type data, are better defined by frontend
@@ -183,11 +203,12 @@ export const createAccount = async (req, res, next) => {
         categoryAndNatureExistsResult.rows.length > 0;
 
       if (categoryAndNatureExists) {
+        await client.query('ROLLBACK');
         const message = `Category ${category_name} with nature ${nature_type_name_req} account already exists. Try again`;
         console.warn('🚀 ~ createAccount ~ message:', message);
         throw new Error(message);
       }
-
+      //----
       const category_nature_type_id_reqResult = await pool.query({
         text: `SELECT category_nature_type_id FROM category_nature_types WHERE category_nature_type_name = $1`,
         values: [nature_type_name_req],
@@ -201,24 +222,30 @@ export const createAccount = async (req, res, next) => {
         category_nature_type_id_req
       );
 
-      await client.query('COMMIT');
       console.log('🚀 ~ createAccount ~ insertQuery:', insertQuery);
 
+      const account_start_date = date ? date : new Date();
+
       const category_budget_accountQuery = {
-        text: `INSERT INTO category_budget_accounts(account_id, category_name,category_nature_type_id,subcategory,budget) VALUES($1,$2,$3,$4,$5) RETURNING *`,
+        text: `INSERT INTO category_budget_accounts(account_id, category_name,category_nature_type_id,subcategory,budget,account_start_date ) VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,
         values: [
           account_id,
           category_name,
           category_nature_type_id_req,
           subcategory,
           account_starting_amount,
+          account_start_date,
         ],
       };
 
       const category_budget_accountResult = await pool.query(
         category_budget_accountQuery
       );
-      const category_budget_account = category_budget_accountResult.rows[0];
+      const category_budget_account = {
+        ...category_budget_accountResult.rows[0],
+        account_name,
+        account_id,
+      };
 
       console.log(
         '🚀 ~ createAccount ~ category_budget_accountResult:',
@@ -230,8 +257,10 @@ export const createAccount = async (req, res, next) => {
       // console.log(
       //   `Category budget account created: ${category_budget_accountResult.rows[0]}`
       // );
-      const message = `Category ${category_name} with nature ${nature_type_name_req} account was create successfully`;
+      const message = `Category ${category_name} with nature ${nature_type_name_req} account was created successfully`;
       console.log('🚀 ~ createAccount ~ message:', message);
+
+      await client.query('COMMIT');
 
       return res.status(201).json({
         status: 201,
@@ -239,11 +268,63 @@ export const createAccount = async (req, res, next) => {
         message,
       });
     }
-
+    //--------------------
+    //pocket_saving_accounts
     //pocket_saving
-    // if (accountTypeIdReq === 4) {
-    //   const { note, desired_date, target } = req.body;
-    // }
+    if (accountTypeIdReq === 4) {
+      let { note, desired_date, target } = req.body;
+      note = note ?? 'pockect saving note';
+
+//if not a desired date then consider one year from now
+      if (!desired_date) {
+        const newDate = new Date(account_start_date); 
+        newDate.setFullYear(newDate.getFullYear() + 1); 
+        desired_date = newDate.toISOString(); 
+      }
+
+      console.log(
+        'just checking target:',
+        target === amount,
+        account_starting_amount,
+        amount,
+        desired_date
+      );
+
+      // insert data
+      const pocket_saving_accountQuery = {
+        text: `INSERT INTO pocket_saving_accounts (account_id,target,desired_date,account_start_date) VALUES ($1,$2,$3,$4)`,
+        values: [account_id, target, desired_date, account_start_date],
+      };
+
+      await client.query('COMMIT');
+
+      const pocket_saving_accountResult = await pool.query(
+        pocket_saving_accountQuery
+      );
+
+      const pocket_saving_account = {
+        ...pocket_saving_accountResult.rows[0],
+        account_name,
+        account_id,
+      };
+
+      console.log(
+        '🚀 ~ createAccount ~ pocket_saving_account:',
+        pocket_saving_account
+      );
+
+      console.log({ accountTypeIdReq }, currencyIdReq, { account_id });
+
+      const message = `Pocket saving ${account_name} account was successfully created`;
+      console.log('🚀 ~ createAccount ~ message:', message);
+
+      return res.status(201).json({
+        status: 201,
+        data: pocket_saving_account,
+        message,
+      });
+    }
+    console.log('🚀 ~ createAccount ~ accountTypeIdReq:', accountTypeIdReq);
 
     //debtor
     // if (accountTypeIdReq === 3) {
