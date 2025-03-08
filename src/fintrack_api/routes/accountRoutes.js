@@ -1,8 +1,9 @@
 import express from 'express'
 //controllers
-import {createIncomeSource} from '../controllers/accountController.js'
+import {createAccount} from '../controllers/accountController.js'
 const router = express.Router();
 
-router.post('/income_source',createIncomeSource)
+router.post('/new_account',createAccount)
 
 export default router;
+

@@ -1,3 +1,7 @@
+import {
+  createError,
+  handlePostgresErrorEs,
+} from '../../utils/errorHandling.js';
 import { pool } from './configDB.js';
 import pc from 'picocolors';
 
@@ -154,12 +158,12 @@ export async function tblAccountTypes() {
   const accountTypeValues = [
     { account_type_id: 1, account_type_name: 'bank' },
     { account_type_id: 2, account_type_name: 'investment' },
-    { account_type_id: 3, account_type_name: 'investment_crypto' },
-    { account_type_id: 4, account_type_name: 'investment_broker' },
-    { account_type_id: 5, account_type_name: 'debtor' },
-    { account_type_id: 6, account_type_name: 'pocket' },
-    { account_type_id: 7, account_type_name: 'budget' }, //expense category
-    { account_type_id: 8, account_type_name: 'cash' },
+    { account_type_id: 3, account_type_name: 'debtor' },
+    { account_type_id: 4, account_type_name: 'pocket_saving' },
+    { account_type_id: 5, account_type_name: 'category_budget' }, //expense category
+    { account_type_id: 6, account_type_name: 'income_source' },
+    // { account_type_id: 3, account_type_name: 'investment_crypto' },
+    // { account_type_id: 4, account_type_name: 'investment_broker' },
   ];
   const tblName = 'account_types';
   const minCount = accountTypeValues.length - 1;
@@ -209,7 +213,70 @@ export async function tblAccountTypes() {
   }
 }
 //tblAccountTypes();
+//--
+//categoryNatureTypes
+export async function tblCategoryNatureTypes() {
+  const categoryNatureTypeValues = [
+    { category_nature_type_id: 1, category_nature_type_name: 'must' },
+    { category_nature_type_id: 2, category_nature_type_name: 'need' },
+    { category_nature_type_id: 3, category_nature_type_name: 'other' },
+    { category_nature_type_id: 4, category_nature_type_name: 'want' },
+  ];
+  const tblName = 'category_nature_types';
+  const minCount = categoryNatureTypeValues.length - 0;
 
+  try {
+    //verify if table exists
+    if (!isValidTableName(tblName)) {
+      throw new Error('Invalid table name');
+    }
+    const exists = await tableExists(tblName);
+
+    if (!exists) {
+      console.log(pc.yellow`${tblName} table does not exist. Creating it...'`);
+      const createQuery = `CREATE TABLE category_nature_types (
+        category_nature_type_id SERIAL PRIMARY KEY NOT NULL,
+        category_nature_type_name VARCHAR(15) NOT NULL 
+)`;
+      await pool.query(createQuery);
+    }
+
+    //is it already populated
+    const isPopulated = await isTablePopulated(tblName, minCount);
+    if (isPopulated) {
+      console.log(pc.yellowBright(`${tblName} table is already populated.`));
+      return;
+    }
+
+    //initiate a transaction
+    await pool.query('BEGIN');
+    //run through the data and insert every tuple
+    for (const type of categoryNatureTypeValues) {
+      const queryText = `INSERT INTO category_nature_types(category_nature_type_id,
+      category_nature_type_name) VALUES ($1,$2)`;
+      const values = [
+        type.category_nature_type_id,
+        type.category_nature_type_name,
+      ];
+      await pool.query(queryText, values);
+      console.log(
+        pc.green(`inserted: ${tblName}, ${type.category_nature_type_name}`)
+      );
+    }
+
+    //confirm transaction
+    await pool.query('COMMIT');
+    console.log(pc.yellow('All tuples inserted successfully.'));
+  } catch (
+    error // Revertir la transacción en caso de error
+  ) {
+    await pool.query('ROLLBACK');
+    const { code, message } = handlePostgresErrorEs();
+    next(createError(code, message));
+    console.error('Error inserting tuples:', message || error);
+  }
+}
+//tblCategoryNatureTypes();
 //---
 //movement_types
 export async function tblMovementTypes() {
@@ -327,6 +394,3 @@ export async function tbltransactionTypes() {
   }
 }
 //tblTransactionTypes();
-
-
-

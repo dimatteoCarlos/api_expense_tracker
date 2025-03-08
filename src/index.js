@@ -7,8 +7,10 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { pool, checkConnection } from './db/configDB.js';
 import routes from './routes/index.js';
+import fintrack_routes from './fintrack_api/routes/index.js';
 import {
   tblAccountTypes,
+  tblCategoryNatureTypes,
   tblCurrencies,
   tblMovementTypes,
   tbltransactionTypes,
@@ -16,7 +18,6 @@ import {
 } from './db/populateDB.js';
 import pc from 'picocolors';
 import { createMainTables } from './db/createTables.js';
-// import { createMainTables } from './db/createTables.js';
 
 dotenv.config();
 // interface CustomError extends Error {status?:number}
@@ -78,39 +79,41 @@ async function initializeDatabase() {
   try {
     console.log(pc.cyanBright('Verificando existencia de datos en tablas ...'));
 
+    // --
     // Initialize tables with catalogued field attributes
-    await tblCurrencies();
-    await tblUserRoles();
-    await tblAccountTypes();
-    await tblMovementTypes();
-    await tbltransactionTypes();
+    // await tblCurrencies();
+    // await tblUserRoles();
+    // await tblAccountTypes();
+    // await tblMovementTypes();
+    // await tbltransactionTypes();
+    await tblCategoryNatureTypes();
 
-    //let's create main tables
-    //   const {
-    //     {tblName:UserAccounts,
-    //     // {tblName:Movements,
-    //     // {tblName:ExpenseMovements,
-    //     // {tblName:ExpenseCategories,
-    //     // {tblName:IncomeMovements,
-    //     // {tblName:IncomeSources,
-    //     // {tblName:Investment_movements,
-    //     // {tblName:Debt_movements,
-    //     // {tblName:Debt_debtors,
-    //     // {tblName:Pocket_movements,
-    //     // {tblName:Transactions,
-    //  } = createMainTables;
+    //hacer un promise.all? 0
 
-    //hacer un promise.all?
-    //  createMainTables.map(async (item, ind)=>{
-    //   await pool.query(item.table)
-    //   console.log(ind, item.tblName)
-    //  })
-
-    //  await pool.query(createMainTables[0].table)
-
-    // await pool.query({text:createMainTables.tblUserAccounts, values:[]});
-    // console.log(createMainTables.tblUserAccounts);
-
+    // await Promise.allSettled(
+    //   createMainTables.map(async (item, ind) => {
+    //     try {
+    //       await pool.query(item.table);
+    //       console.log(ind, item.tblName, 'created');
+    //     } catch (error) {
+    //       console.error(pc.red(`Error creating table ${item.tblName}:`, error));
+    //     }
+    //   })
+    // ).then((results) => {
+    //   results.forEach((result, indx) => {
+    //     if (result.status === 'fulfilled') {
+    //       // console.log(
+    //       //   // `Table ${createMainTables[indx].tblName} was successfully created .`
+    //       // );
+    //     } else if (result.status === 'rejected') {
+    //       console.error(
+    //         `Table ${createMainTables[indx].tblName} failed to create:`,
+    //         result.reason
+    //       );
+    //     }
+    //   });
+    // });
+    //---
     console.log(pc.greenBright('Base de datos inicializada correctamente.'));
   } catch (error) {
     console.error(
@@ -145,6 +148,7 @@ pool.on('error', (err) => {
 //------------------
 //Middleware route handling
 app.use('/api', routes);
+app.use('/api/fintrack', fintrack_routes);
 
 //------------------
 //response to undefined routes request
