@@ -8,7 +8,6 @@ import {
 import { pool } from '../../db/configDB.js';
 import { validateAndNormalizeDate } from '../../../utils/helpers.js';
 
-//incomeSourceController
 //post: /api/fintrack/account/new_account?user='UUID'
 
 export const createBasicAccount = async (req, res, next) => {
@@ -42,11 +41,6 @@ export const createBasicAccount = async (req, res, next) => {
 
     //------------------
     console.log(pc.bgCyan('userId', userId));
-    // console.log(
-    //   '🚀 ~ createAccount ~ account_start_date:',
-    //   account_start_date,
-    //   date
-    // );
 
     //category_budget account
     // let account_name =
@@ -177,108 +171,6 @@ export const createBasicAccount = async (req, res, next) => {
       },
       message,
     });
-    // }
-    //--------------------
-    //pocket_saving_accounts
-    //pocket_saving
-    // if (accountTypeIdReq === 4) {
-    //   let { note, desired_date, target } = req.body;
-    //   note = note ?? 'pockect saving note';
-
-    //   //if not a desired date then consider one year from now
-    //   if (!desired_date) {
-    //     const newDate = new Date(account_start_date);
-    //     newDate.setFullYear(newDate.getFullYear() + 1);
-    //     desired_date = newDate.toISOString();
-    //   }
-
-    //   // insert data
-    //   const pocket_saving_accountQuery = {
-    //     text: `INSERT INTO pocket_saving_accounts (account_id,target,desired_date,account_start_date) VALUES ($1,$2,$3,$4) RETURNING *`,
-    //     values: [account_id, target, desired_date, account_start_date],
-    //   };
-
-    //   await client.query('COMMIT');
-
-    //   const pocket_saving_accountResult = await pool.query(
-    //     pocket_saving_accountQuery
-    //   );
-
-    //   const pocket_saving_account = {
-    //     pocket_saving_account: {
-    //       ...pocket_saving_accountResult.rows[0],
-    //       currency_code,
-    //       account_type_name,
-    //     },
-    //   };
-
-    //   console.log(
-    //     '🚀 ~ createAccount ~ pocket_saving_account:',
-    //     pocket_saving_account
-    //   );
-
-    //   const message = `Pocket saving ${account_name} account was successfully created`;
-    //   console.log('🚀 ~ createAccount ~ message:', message);
-
-    //   return res.status(201).json({
-    //     status: 201,
-    //     data: { pocket_saving_account, account_basic_data },
-    //     message,
-    //   });
-    // }
-    // console.log('🚀 ~ createAccount ~ accountTypeIdReq:', accountTypeIdReq);
-
-    // //debtor_accounts
-    // //debtor
-    // if (accountTypeIdReq === 3) {
-    //   const {
-    //     debtor_lastname,
-    //     debtor_name,
-    //     value,
-    //     selected_account_name,
-    //     selected_account_id,
-    //     debtor_transaction_type_name,
-    //   } = req.body;
-    // }
-
-    //bank_account: bank or investment
-    // if (accountTypeIdReq === 2) {
-    //   const { nature, subcategory } = req.body;
-    // }
-
-    // bank_account:
-    // if (!source_name) {
-    //   const message = `Source name is required`;
-    //   console.warn(pc.blueBright(message));
-    //   return res.status(400).json({ status: 400, message });
-    // }
-
-    //table IncomeSources must exist - created at db initialization
-    //verify source_name does not exist
-
-    // const sourceNameExistResult = await pool.query({
-    //   text: `SELECT * FROM income_sources WHERE user_id = $1 AND source_name ILIKE $2`,
-    //   values: [userId, `%${source_name}%`],
-    // });
-
-    // if (sourceNameExistResult.rows.length > 0) {
-    //   throw new Error(
-    //     `${sourceNameExistResult.rows.length} income souce(s) found with a similar name. Try again`
-    //   );
-    // }
-
-    // const sourceNameCreated = await pool.query({
-    //   text: `INSERT INTO income_sources(user_id,source_name) VALUES($1,$2) RETURNING *`,
-    //   values: [userId, source_name],
-    // });
-
-    // console.log(sourceNameCreated.rows[0]);
-
-    // return res.status(200).json({
-    //   message: `${account_name} account with the id ${account_id} was successfully  created`,
-    //   data: aqui hay que regresar todos los datos de account? y account especifico, pero si son los mismos que entrego el frontend,
-    //
-    //  });
   } catch (error) {
     await client.query('ROLLBACK');
     //handle pg errors
@@ -292,7 +184,7 @@ export const createBasicAccount = async (req, res, next) => {
     client.release();
   }
 };
-
+//--------------------
 export const createDebtorAccount = async (req, res, next) => {
   //basic_account_data:  userId,account_type_name,currency_code,amount,account_start_date,account_starting_amount,
   console.log(pc.blueBright('createDebtorAccount'));
@@ -359,17 +251,6 @@ export const createDebtorAccount = async (req, res, next) => {
     //   ? name + '_' + req.body.nature
     //   : name;
     //-----------------------
-
-    //attribute convention for each account type
-    //debtor
-    // account_name=,
-    // accountTypeIdReq,
-    // currencyIdReq,
-    // account_starting_amount,
-    // account_starting_amount, //initial balance
-    // account_start_date,
-    //pocket_saving
-    //Deberia contemplar un amount como monto inicial de la cuenta de ahorro y sobre este hacer balance.
 
     //----
     //date validation
@@ -522,63 +403,6 @@ selected_account_id,debtor_transaction_type_name) VALUES ($1,$2,$3,$4,$5,$6,$7) 
       },
       message,
     });
-
-    // }
-    //--------------------
-
-    // console.log('🚀 ~ createAccount ~ accountTypeIdReq:', accountTypeIdReq);
-
-    // //debtor_accounts
-    // //debtor
-    // if (accountTypeIdReq === 3) {
-    //   const {
-    //     debtor_lastname,
-    //     debtor_name,
-    //     value,
-    //     selected_account_name,
-    //     selected_account_id,
-    //     debtor_transaction_type_name,
-    //   } = req.body;
-    // }
-
-    //bank_account: bank or investment
-    // if (accountTypeIdReq === 2) {
-    //   const { nature, subcategory } = req.body;
-    // }
-
-    // bank_account:
-    // if (!source_name) {
-    //   const message = `Source name is required`;
-    //   console.warn(pc.blueBright(message));
-    //   return res.status(400).json({ status: 400, message });
-    // }
-
-    //table IncomeSources must exist - created at db initialization
-    //verify source_name does not exist
-
-    // const sourceNameExistResult = await pool.query({
-    //   text: `SELECT * FROM income_sources WHERE user_id = $1 AND source_name ILIKE $2`,
-    //   values: [userId, `%${source_name}%`],
-    // });
-
-    // if (sourceNameExistResult.rows.length > 0) {
-    //   throw new Error(
-    //     `${sourceNameExistResult.rows.length} income souce(s) found with a similar name. Try again`
-    //   );
-    // }
-
-    // const sourceNameCreated = await pool.query({
-    //   text: `INSERT INTO income_sources(user_id,source_name) VALUES($1,$2) RETURNING *`,
-    //   values: [userId, source_name],
-    // });
-
-    // console.log(sourceNameCreated.rows[0]);
-
-    // return res.status(200).json({
-    //   message: `${account_name} account with the id ${account_id} was successfully  created`,
-    //   data: aqui hay que regresar todos los datos de account? y account especifico, pero si son los mismos que entrego el frontend,
-    //
-    //  });
   } catch (error) {
     await client.query('ROLLBACK');
     //handle pg errors
@@ -752,9 +576,6 @@ export const createPocketAccount = async (req, res, next) => {
     });
 
     //--------------------
-    //pocket_saving_accounts
-    //pocket_saving
-    // if (accountTypeIdReq === 4) {
   } catch (error) {
     await client.query('ROLLBACK');
     //handle pg errors

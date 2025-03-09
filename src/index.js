@@ -86,33 +86,37 @@ async function initializeDatabase() {
     // await tblAccountTypes();
     // await tblMovementTypes();
     // await tbltransactionTypes();
-    await tblCategoryNatureTypes();
+    // await tblCategoryNatureTypes();
 
     //hacer un promise.all? 0
+    if (true) {
+      await Promise.allSettled(
+        createMainTables.map(async (item, ind) => {
+          try {
+            await pool.query(item.table);
+            console.log(ind, item.tblName, 'created');
+          } catch (error) {
+            console.error(
+              pc.red(`Error creating table ${item.tblName}:`, error)
+            );
+          }
+        })
+      ).then((results) => {
+        results.forEach((result, indx) => {
+          if (result.status === 'fulfilled') {
+            // console.log(
+            //   // `Table ${createMainTables[indx].tblName} was successfully created .`
+            // );
+          } else if (result.status === 'rejected') {
+            console.error(
+              `Table ${createMainTables[indx].tblName} failed to create:`,
+              result.reason
+            );
+          }
+        });
+      });
+    }
 
-    // await Promise.allSettled(
-    //   createMainTables.map(async (item, ind) => {
-    //     try {
-    //       await pool.query(item.table);
-    //       console.log(ind, item.tblName, 'created');
-    //     } catch (error) {
-    //       console.error(pc.red(`Error creating table ${item.tblName}:`, error));
-    //     }
-    //   })
-    // ).then((results) => {
-    //   results.forEach((result, indx) => {
-    //     if (result.status === 'fulfilled') {
-    //       // console.log(
-    //       //   // `Table ${createMainTables[indx].tblName} was successfully created .`
-    //       // );
-    //     } else if (result.status === 'rejected') {
-    //       console.error(
-    //         `Table ${createMainTables[indx].tblName} failed to create:`,
-    //         result.reason
-    //       );
-    //     }
-    //   });
-    // });
     //---
     console.log(pc.greenBright('Base de datos inicializada correctamente.'));
   } catch (error) {

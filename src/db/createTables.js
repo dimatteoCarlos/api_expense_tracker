@@ -1,6 +1,6 @@
 export const createTables = `
 CREATE TABLE users(
-user_id UUID PRIMARY KEY NOT NULL, username VARCHAR(50) UNIQUE NOT NULL, email VARCHAR(50) UNIQUE NOT NULL, user_firstname VARCHAR(25) NOT NULL,  user_lastname VARCHAR(25)  NOT NULL, user_contact VARCHAR(25), password_hashed VARCHAR(255) NOT NULL, currency_id INT DEFAULT 1 REFERENCES currencies(currency_id) ON DELETE SET NULL ON UPDATE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+user_id UUID PRIMARY KEY NOT NULL, username VARCHAR(50) UNIQUE NOT NULL, email VARCHAR(50) UNIQUE NOT NULL, user_firstname VARCHAR(25) NOT NULL,  user_lastname VARCHAR(25)  NOT NULL, user_contact VARCHAR(25), password_hashed VARCHAR(255) NOT NULL, currency_id INT DEFAULT 1 REFERENCES currencies(currency_id) ON DELETE SET NULL ON UPDATE CASCADE, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
 user_role_id INT DEFAULT REFERENCES user_roles(user_ IF NOT EXISTSrole_id) ON DELETE SET NULL ON UPDATE CASCADE,
 ) 
@@ -27,9 +27,9 @@ account_type_id INT  REFERENCES account_types(account_type_id) ON DELETE SET NUL
 currency_id INT NOT NULL REFERENCES currencies(currency_id) ON DELETE RESTRICT ON UPDATE CASCADE, 
  account_starting_amount DECIMAL(15,2) NOT NULL,
  account_balance DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    account_start_date TIMESTAMPTZ NOT NULL CHECK (account_start_date <= NOW()) , 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    account_start_date TIMESTAMP NOT NULL CHECK (account_start_date <= NOW()) , 
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
 
 CREATE TABLE movement_types (
@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS movements (
     currency_id INT  REFERENCES currencies(currency_id) ON DELETE SET NULL ON UPDATE CASCADE, 
     amount DECIMAL(15,2) NOT NULL,
     description VARCHAR(255),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 )
 
 CREATE TABLE IF NOT EXISTS expense_movements (
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS income_sources (
 CREATE TABLE IF NOT EXISTS investment_movements (
     movement_id INT PRIMARY KEY NOT NULL REFERENCES movements(movement_id) ON DELETE CASCADE ON UPDATE CASCADE,
     transaction_type VARCHAR(10) NOT NULL CHECK (transaction_type IN ('deposit', 'withdraw')),
-    transaction_investment_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    transaction_investment_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     account_id INT NOT NULL REFERENCES user_accounts(account_id) ON DELETE CASCADE ON UPDATE CASCADE
 )
 
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS debt_movements (
     movement_id INT PRIMARY KEY NOT NULL REFERENCES movements(movement_id) ON DELETE CASCADE ON UPDATE CASCADE,
     debtor_id INT NOT NULL REFERENCES debt_debtors(debtor_id) ON DELETE CASCADE ON UPDATE CASCADE,
     debt_transaction_type VARCHAR(8) NOT NULL CHECK (debt_transaction_type IN ('lend', 'borrow')),
-    transaction_debt_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)
+    transaction_debt_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)
 
 CREATE TABLE IF NOT EXISTS debt_debtors (
     debtor_id SERIAL PRIMARY KEY NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS pocket_movements (
     pocket_name VARCHAR(50) NOT NULL,
     target_amount DECIMAL(15,2),
     pocket_note VARCHAR(50),
-    desired_date TIMESTAMPTZ,
+    desired_date TIMESTAMP,
 )
 
 CREATE TABLE IF NOT EXISTS transactions(
@@ -111,8 +111,8 @@ currency_id INTEGER NOT NULL,
  source_account_id INT  REFERENCES user_accounts(account_id) ON DELETE SET NULL ON UPDATE CASCADE,
 destination_account_id INT  , 
 status VARCHAR(50) NOT NULL, 
-transaction_actual_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+transaction_actual_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 
 CREATE TABLE IF NOT EXISTS transaction_types(
@@ -124,7 +124,7 @@ transation_type_name VARCHAR(50) NOT NULL CHECK(transation_type_name IN ('withdr
 export const createMainTables = [
   // {
   //   tblName: 'users',
-  //   table: `CREATE TABLE IF NOT EXISTS users(user_id UUID PRIMARY KEY NOT NULL, username VARCHAR(50) UNIQUE NOT NULL, email VARCHAR(50) UNIQUE NOT NULL, user_firstname VARCHAR(25) NOT NULL,  user_lastname VARCHAR(25)  NOT NULL, user_contact VARCHAR(25), password_hashed VARCHAR(255) NOT NULL, currency_id INT REFERENCES currencies(currency_id) ON DELETE SET NULL ON UPDATE CASCADE, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,user_role_id INT  REFERENCES user_roles(user_role_id) ON DELETE SET NULL ON UPDATE CASCADE) `,
+  //   table: `CREATE TABLE IF NOT EXISTS users(user_id UUID PRIMARY KEY NOT NULL, username VARCHAR(50) UNIQUE NOT NULL, email VARCHAR(50) UNIQUE NOT NULL, user_firstname VARCHAR(25) NOT NULL,  user_lastname VARCHAR(25)  NOT NULL, user_contact VARCHAR(25), password_hashed VARCHAR(255) NOT NULL, currency_id INT REFERENCES currencies(currency_id) ON DELETE SET NULL ON UPDATE CASCADE, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,user_role_id INT  REFERENCES user_roles(user_role_id) ON DELETE SET NULL ON UPDATE CASCADE) `,
   // },
 
   {
@@ -136,33 +136,35 @@ account_type_id INT  REFERENCES account_types(account_type_id) ON DELETE SET NUL
 currency_id INT NOT NULL REFERENCES currencies(currency_id) ON DELETE RESTRICT ON UPDATE CASCADE, 
  account_starting_amount DECIMAL(15,2) NOT NULL,
  account_balance DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-    account_start_date TIMESTAMPTZ NOT NULL CHECK (account_start_date <= NOW()), 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    account_start_date TIMESTAMP NOT NULL, 
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 )`,
   },
+
+  //CHECK (account_start_date <= NOW()
   //------specific type accounts
   {
     tblName: 'bank_accounts',
     table:
-      'CREATE TABLE IF NOT EXISTS bank_accounts(account_id INT PRIMARY KEY REFERENCES user_accounts(account_id), initial_deposit DECIMAL (15,2))',
+      'CREATE TABLE IF NOT EXISTS bank_accounts(account_id INT PRIMARY KEY REFERENCES user_accounts(account_id), account_starting_amount DECIMAL (15,2),account_start_date TIMESTAMP NOT NULL )',
   },
 
   {
     tblName: 'investment_accounts',
     table:
-      'CREATE TABLE IF NOT EXISTS investment_accounts(account_id INT PRIMARY KEY REFERENCES user_accounts(account_id), initial_deposit DECIMAL (15,2))',
+      'CREATE TABLE IF NOT EXISTS investment_accounts(account_id INT PRIMARY KEY REFERENCES user_accounts(account_id), account_starting_amount DECIMAL (15,2),account_start_date TIMESTAMP NOT NULL)',
   },
 
   {
     tblName: 'income_source_accounts',
     table:
-      'CREATE TABLE IF NOT EXISTS income_source_accounts(account_id INT PRIMARY KEY REFERENCES user_accounts(account_id), initial_deposit DECIMAL (15,2))',
+      'CREATE TABLE IF NOT EXISTS income_source_accounts(account_id INT PRIMARY KEY REFERENCES user_accounts(account_id), account_starting_amount DECIMAL (15,2),account_start_date TIMESTAMP NOT NULL)',
   },
 
   {
     tblName: `category_budget_accounts`,
-    table: `CREATE TABLE IF NOT EXISTS category_budget_accounts(account_id INT PRIMARY KEY REFERENCES user_accounts(account_id), category_name VARCHAR(50) NOT NULL,category_nature_type_id INT REFERENCES category_nature_types(category_nature_type_id), subcategory VARCHAR(25), budget DECIMAL(15, 2))`,
+    table: `CREATE TABLE IF NOT EXISTS category_budget_accounts(account_id INT PRIMARY KEY REFERENCES user_accounts(account_id), category_name VARCHAR(50) NOT NULL,category_nature_type_id INT REFERENCES category_nature_types(category_nature_type_id), subcategory VARCHAR(25), budget DECIMAL(15, 2),account_start_date TIMESTAMP NOT NULL)`,
   },
 
   {
@@ -173,13 +175,12 @@ currency_id INT NOT NULL REFERENCES currencies(currency_id) ON DELETE RESTRICT O
          debtor_name VARCHAR(25),
          debtor_lastname VARCHAR(25),
          selected_account_name VARCHAR(50),
-          selected_account_id INT
-  )`,
+          selected_account_id INT,account_start_date TIMESTAMP NOT NULL)`,
   },
 
   {
     tblName: `pocket_saving_accounts`,
-    table: `CREATE TABLE IF NOT EXISTS pocket_saving_accounts (account_id INT PRIMARY KEY REFERENCES user_accounts(account_id), target DECIMAL(15, 2), desired_date TIMESTAMPTZ NOT NULL)`,
+    table: `CREATE TABLE IF NOT EXISTS pocket_saving_accounts (account_id INT PRIMARY KEY REFERENCES user_accounts(account_id), target DECIMAL(15, 2), desired_date TIMESTAMP NOT NULL,account_start_date TIMESTAMP NOT NULL)`,
   },
 
   // -----
@@ -192,8 +193,8 @@ currency_id INT NOT NULL REFERENCES currencies(currency_id) ON DELETE RESTRICT O
     currency_id INT  REFERENCES currencies(currency_id) ON DELETE SET NULL ON UPDATE CASCADE, 
     amount DECIMAL(15,2) NOT NULL,
     description VARCHAR(255),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 )`,
   },
   {
@@ -237,7 +238,7 @@ currency_id INT NOT NULL REFERENCES currencies(currency_id) ON DELETE RESTRICT O
     table: `CREATE TABLE IF NOT EXISTS investment_movements (
     movement_id INT PRIMARY KEY NOT NULL REFERENCES movements(movement_id) ON DELETE CASCADE ON UPDATE CASCADE,
     transaction_type VARCHAR(10) NOT NULL CHECK (transaction_type IN ('deposit', 'withdraw')),
-    transaction_investment_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    transaction_investment_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     account_id INT NOT NULL REFERENCES user_accounts(account_id) ON DELETE CASCADE ON UPDATE CASCADE
 )`,
   },
@@ -247,7 +248,7 @@ currency_id INT NOT NULL REFERENCES currencies(currency_id) ON DELETE RESTRICT O
     movement_id INT PRIMARY KEY NOT NULL REFERENCES movements(movement_id) ON DELETE CASCADE ON UPDATE CASCADE,
     debtor_id INT NOT NULL REFERENCES debt_debtors(debtor_id) ON DELETE CASCADE ON UPDATE CASCADE,
     debt_transaction_type VARCHAR(8) NOT NULL CHECK (debt_transaction_type IN ('lend', 'borrow')),
-    transaction_debt_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
+    transaction_debt_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   },
   {
     tblName: 'debt_debtors',
@@ -281,8 +282,8 @@ currency_id INTEGER NOT NULL,
  source_account_id INT  REFERENCES user_accounts(account_id) ON DELETE SET NULL ON UPDATE CASCADE,
 destination_account_id INT  , 
 status VARCHAR(50) NOT NULL, 
-transaction_actual_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+transaction_actual_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )`,
   },
 ];
