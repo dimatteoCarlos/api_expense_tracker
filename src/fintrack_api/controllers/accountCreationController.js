@@ -9,7 +9,7 @@ import { pool } from '../../db/configDB.js';
 import { determineTransactionType } from '../../../utils/helpers.js';
 import { recordTransaction } from '../../../utils/recordTransaction.js';
 //import { validateAndNormalizeDate } from '../../../utils/helpers.js';
-//post: /api/fintrack/account/new_account/?user='UUID'
+//post: /api/fintrack/account/new_account/account_type_name?user='UUID'
 
 export const createBasicAccount = async (req, res, next) => {
   //basic_account_data:  userId,account_type_name,currency_code,amount,account_start_date,account_starting_amount
@@ -877,7 +877,6 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
     const currencyIdReq = currencyArr.filter(
       (currency) => currency.currency_code === currency_code
     )[0].currency_id;
-
     //---
     //transaction to insert data
     await client.query('BEGIN');
@@ -943,17 +942,14 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
         account_start_date,
       ],
     };
-
     const category_budget_accountResult = await pool.query(
       category_budget_accountQuery
     );
-
     const category_budget_account = {
       ...category_budget_accountResult.rows[0],
       nature_type_name: nature_type_name_req,
       currency_code,
     };
-
     //-----------Register transaction
     //Add deposit transaction
     //movement_type_name:account-opening, movement_type_id: 7,  transaction_type_name:deposit/account-opening, transaction_type_id: 2/5
@@ -969,12 +965,10 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
       '🚀 ~ createPocketAccount ~ transactionTypeDescription:',
       transactionTypeDescription
     );
-
     const transaction_type_idResult = await pool.query({
       text: `SELECT transaction_type_id FROM transaction_types WHERE transaction_type_name = $1`,
       values: [transactionTypeDescription],
     });
-
     const transaction_type_id =
       transaction_type_idResult.rows[0].transaction_type_id;
 
@@ -1050,3 +1044,4 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
   }
 };
 //--------------------
+

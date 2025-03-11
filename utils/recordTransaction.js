@@ -5,7 +5,6 @@ import { pool } from '../src/db/configDB.js';
 import { handlePostgresError } from './errorHandling.js';
 
 export async function recordTransaction(options) {
-  // const client = await pool.connect();
   try {
     const {
       userId,
@@ -39,18 +38,14 @@ export async function recordTransaction(options) {
         transaction_actual_date,
       ],
     });
-
     // console.log(transactionResult.rows[0]);
-
     // await client.query('COMMIT');
-
     const message = 'Transaction completed successfully.';
     console.log(pc.yellowBright(message));
-    // res.status(200).json({ status: 200, message });
 
     return transactionResult.rows[0];
   } catch (error) {
-    // await client.query('ROLLBACK');
+    await client.query('ROLLBACK');
     const message = error.message || `Error when recording transaction.`;
     console.error(pc.redBright(message), 'from record transaction');
     throw handlePostgresError(error);

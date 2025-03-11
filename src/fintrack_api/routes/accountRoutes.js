@@ -5,7 +5,7 @@ import {
   createDebtorAccount,
   createPocketAccount,
   createCategoryBudgetAccount,
-} from '../controllers/accountController.js';
+} from '../controllers/accountCreationController.js';
 const router = express.Router();
 
 router.post('/new_account/bank', createBasicAccount); //bank, income_source, investment
@@ -16,3 +16,7 @@ router.post('/new_account/pocket_saving', createPocketAccount);
 router.post('/new_account/category_budget', createCategoryBudgetAccount);
 
 export default router;
+
+// const select = true;
+// import { verifyHeaderAuth, verifyUser } from '../middlewares/authMiddleware.js';
+// router.post('/new_account/bank',verifyUser ,createBasicAccount);

@@ -3,7 +3,7 @@ import {
   createAccount,
   getAccount,
   addMoneyToAccount,
-} from '../controllers/accountController.js';
+} from '../controllers/accountCreationController.js';
 const router = express.Router();
 router.post('/', createAccount);
 router.get('/:accountId', getAccount);
