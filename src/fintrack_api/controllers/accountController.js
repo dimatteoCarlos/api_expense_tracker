@@ -778,7 +778,7 @@ export const createPocketAccount = async (req, res, next) => {
 //----------------------
 //POST: http://localhost:5000/api/fintrack/account/new_account/category_budget?user=6e0ba475-bf23-4e1b-a125-3a8f0b3d352c
 export const createCategoryBudgetAccount = async (req, res, next) => {
-   //basic_account_data:  userId,account_type_name,currency_code,amount,account_start_date,account_starting_amount,
+  //basic_account_data:  userId,account_type_name,currency_code,amount,account_start_date,account_starting_amount,
   //account type: category_budget.
   //movement_type_name:'account-opening', movement_type_id: 8, transaction_type_name:deposit
   console.log(pc.blueBright('createCategoryBudgetAccount'));
@@ -798,19 +798,18 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
       subcategory,
       name: category_name,
       budget,
+      sourceAccountId,
+      transactionActualDate,
     } = req.body;
 
     //account basic data
     const { currency, date, amount } = req.body;
     const currency_code = currency ? currency : 'usd';
     const account_start_date = !!date && date !== '' ? date : new Date();
-
-    if (amount < 0) {
-      const message = 'Amount must be >= 0. Tray again!';
-      console.warn(pc.redBright(message));
-      return res.status(400).json({ status: 400, message });
-    }
-    const account_starting_amount = amount ? parseFloat(amount) : 0.0; //initial value already spent
+    const transaction_actual_date =
+      !transactionActualDate || transactionActualDate == ''
+        ? new Date()
+        : transactionActualDate;
 
     //category_budget account
     const account_type_name = 'category_budget';
@@ -820,7 +819,19 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
         : req.body.name;
 
     const category_nature_budget = budget ? parseFloat(budget) : 0.0;
-    //-------------------------------------------
+
+    if (amount < 0) {
+      const message = 'Amount must be >= 0. Tray again!';
+      console.warn(pc.redBright(message));
+      return res.status(400).json({ status: 400, message });
+    }
+    const account_starting_amount = amount ? parseFloat(amount) : 0.0; //initial amount received (expense from other accounts)
+    //---category_budget_initial_balance / VERIFICAR NATURE
+    const account_balance = account_starting_amount; //initial amount spent in the balance (expense from other accounts)
+
+    //CHECK WEATHER IT CAN BE SPENT WHEN NO BUDGET HAS BEEN ASSIGNED TO THE ACCOUNT. IT SHOULD NOT.
+    //CUANDO SE ASIGNA UN BUDGET, ?SE RESERVA ALGUN DINERO DE ALGUNA OTRA CUENTA?
+    //----------------------------------
     // console.log('userId', userId);
     //----------------------------------
     //currency and account_type data, are better defined by frontend
@@ -884,7 +895,7 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
         accountTypeIdReq,
         currencyIdReq,
         account_starting_amount,
-        account_starting_amount, //initial balance
+        account_balance, //initial balance
         account_start_date,
       ],
     };
@@ -942,7 +953,6 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
       nature_type_name: nature_type_name_req,
       currency_code,
     };
-
 
     //-----------Register transaction
     //Add deposit transaction
@@ -1007,13 +1017,6 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
     //actualizar balance en cuenta slack
     //registrar movements y debtor_movements
     // ------
-
-
-
-
-
-
-
 
     await client.query('COMMIT');
 
