@@ -284,7 +284,7 @@ export const getAccount = async (req, res, next) => {
       // console.log('🚀 ~ getAccount ~ typeAccountId:', typeAccountId);
 
       const accountsByTypeResult = await pool.query({
-        text: `SELECT * FROM user_accounts WHERE user_id = $1 AND account_type_id = $2`,
+        text: `SELECT * FROM user_accounts WHERE user_id = $1 AND account_type_i=d = $2`,
         values: [userId, typeAccountId],
       });
 
@@ -500,7 +500,6 @@ export const addMoneyToAccount = async (req, res, next) => {
 
     //-----------Register trasaction
     //Add deposit transaction
-
     const transactionOptionAddMoneyToAccount = {
       userId,
       description: `${accountInfo.account_name}-(Received Deposit)`,

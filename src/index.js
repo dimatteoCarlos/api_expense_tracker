@@ -88,8 +88,35 @@ async function initializeDatabase() {
     // await tbltransactionTypes();
     // await tblCategoryNatureTypes();
 
-    //hacer un promise.all? 0
-    if (true) {
+    //truncate tables
+    if (false) {
+      await Promise.allSettled(
+        createMainTables.map(async (item, indx) => {
+          try {
+            // await pool.query({ text: `TRUNCATE TABLE ${item.tblName} CASCADE` });
+            // await pool.query({ text: `DROP TABLE ${item.tblName} CASCADE` });
+            console.log(indx, item.tblName, 'truncated');
+          } catch (error) {
+            console.error('error truncating the table', `${item.tblName}`);
+          }
+        })
+      ).then((results) => {
+        if (results.status === 'fulfilled') {
+          console.log(
+            `Table ${createMainTables[indx].tblName} was successfully truncated .`
+          );
+        } else if (results.status === 'rejected') {
+          console.error(
+            `Table ${createMainTables[indx].tblName} failed to truncate:`,
+            results.reason
+          );
+        }
+      });
+    }
+
+    //create tables
+
+    if (false) {
       await Promise.allSettled(
         createMainTables.map(async (item, ind) => {
           try {

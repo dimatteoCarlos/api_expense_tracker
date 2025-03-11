@@ -17,11 +17,11 @@ export async function checkConnection() {
     await pool.query('SELECT 1');
     console.log(
       pc.italic(pc.yellowBright('Conexión a la base de datos verificada.'))
-    ); //Data base connection verifyid
+    ); //Data base connection verifiedd
   } catch (error) {
     console.error(
       pc.red('Error al verificar la conexión a la base de datos:', error)
-    ); //Error when connecting to data base. Connection not verifyied
+    ); //Error when connecting to data base.
     throw error;
   }
 }

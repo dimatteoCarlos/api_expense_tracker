@@ -374,7 +374,7 @@ export const transferMoneyToAccount = async (req, res, next) => {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error(
-      pc.redBright('Error occured on getting Dashboard Information'),
+      pc.redBright('Error occured on transfering Money To an Account'),
       pc.greenBright(error.message || 'something went wrong')
     );
     const { code, message } = handlePostgresError(error);

@@ -137,7 +137,7 @@ export async function tblUserRoles() {
       const queryText = `INSERT INTO user_roles(user_role_id, user_role_name) VALUES ($1,$2)`;
       const values = [role.user_role_id, role.user_role_name];
       await pool.query(queryText, values);
-      console.log(pc.green('inserted: user_role', role.user_role_name));
+      console.log(pc.green('inserted: user_role'), pc.green( role.user_role_name));
     }
 
     //confirm transaction
@@ -288,9 +288,10 @@ export async function tblMovementTypes() {
     { movement_type_id: 5, movement_type_name: 'pocket' },
     { movement_type_id: 6, movement_type_name: 'transfer' },
     { movement_type_id: 7, movement_type_name: 'receive' },
+    { movement_type_id: 8, movement_type_name: 'account-opening' },
   ];
   const tblName = 'movement_types';
-  const minCount = movementTypeValues.length - 1;
+  const minCount = movementTypeValues.length;
 
   try {
     //verify if table exists
@@ -303,7 +304,7 @@ export async function tblMovementTypes() {
       console.log(pc.yellow`${tblName} table does not exist. Creating it...'`);
       const createQuery = `CREATE TABLE movement_types (
         movement_type_id INT PRIMARY KEY NOT NULL,
-        movement_type_name VARCHAR(50) NOT NULL CHECK(movement_type_name IN ('expense','income','investment','debt','pocket','transfer','receive'))
+        movement_type_name VARCHAR(50) NOT NULL CHECK(movement_type_name IN ('expense','income','investment','debt','pocket','transfer','receive','account-opening'))
 )`;
       await pool.query(createQuery);
     }
@@ -346,10 +347,11 @@ export async function tbltransactionTypes() {
     { transaction_type_id: 2, transaction_type_name: 'deposit' },
     { transaction_type_id: 3, transaction_type_name: 'lend' },
     { transaction_type_id: 4, transaction_type_name: 'borrow' },
+    { transaction_type_id: 5, transaction_type_name:  'account-opening'},
   ];
 
   const tblName = 'transaction_types';
-  const minCount = transactionTypeValues.length - 1;
+  const minCount = transactionTypeValues.length ;
 
   try {
     //verify if table exists
@@ -361,7 +363,7 @@ export async function tbltransactionTypes() {
     if (!exists) {
       console.log(pc.yellow`${tblName} table does not exist. Creating it...'`);
       const createQuery = `CREATE TABLE transaction_types(transaction_type_id SERIAL PRIMARY KEY NOT NULL,
-        transaction_type_name VARCHAR(10) NOT NULL)`;
+        transaction_type_name VARCHAR(50) NOT NULL)`;
       await pool.query(createQuery);
     }
 
