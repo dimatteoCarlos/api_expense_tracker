@@ -75,8 +75,8 @@ const updateAccountBalance = async (
   transactionActualDate
 ) => {
   const insertBalanceQuery = {
-    text: `UPDATE user_accounts SET account_balance=$1), updated_at = transactionActualDate WHERE account_id = $2 RETURNING *`,
-    values: [newBalance, accountId],
+    text: `UPDATE user_accounts SET account_balance=$1), updated_at = $2 WHERE account_id = $3 RETURNING *`,
+    values: [newBalance, transactionActualDate, accountId],
   };
   const updatedAccountResult = await pool.query(insertBalanceQuery);
   //assure the existence of updatedAccountResult
@@ -280,7 +280,6 @@ export const transferBetweenAccounts = async (req, res, next) => {
     const message = 'Transaction completed successfully.';
     console.log(pc.yellowBright(message));
     res.status(200).json({ status: 200, message });
-    
   } catch (error) {
     await client.query('ROLLBACK');
     const { code, message } = handlePostgresError(error);
