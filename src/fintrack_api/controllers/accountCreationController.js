@@ -54,13 +54,15 @@ export const createBasicAccount = async (req, res, next) => {
     //check for the account_type_name = bank
     //check coherence of type account requested
     const typeAccountRequested = req.originalUrl.split('/').pop().split('?')[0];
-    const checkTypeCoherence = typeAccountRequested === account_type_name;
-    if (!checkTypeCoherence) {
-      const message = `Check coherence between account type requested on url: ${typeAccountRequested.toUpperCase()} vs account type entered: ${account_type_name.toUpperCase()}`;
-      console.warn('Warning:', pc.cyanBright(message));
-      throw new Error(message);
-    }
 
+    if (account_type_name) {
+      const checkTypeCoherence = typeAccountRequested === account_type_name;
+      if (!checkTypeCoherence) {
+        const message = `Check coherence between account type requested on url: ${typeAccountRequested.toUpperCase()} vs account type entered: ${account_type_name.toUpperCase()}`;
+        console.warn('Warning:', pc.cyanBright(message));
+        throw new Error(message);
+      }
+    }
     //---
     const account_start_date = !!date && date !== '' ? date : new Date();
     const transaction_actual_date =
@@ -100,7 +102,7 @@ export const createBasicAccount = async (req, res, next) => {
     const accountTypeQuery = `SELECT * FROM account_types`;
     const accountTypeResult = await pool.query(accountTypeQuery);
     const accountTypeArr = accountTypeResult.rows;
-    // console.log('🚀 ~ createAccount ~ accountTypeArr:', accountTypeArr);
+    console.log('🚀 ~ createAccount ~ accountTypeArr:', accountTypeArr, 'ueste', accountTypeArr[0]);
 
     const accountTypeIdReqObj = accountTypeArr.filter(
       (type) => type.account_type_name == account_type_name.trim()
@@ -1044,4 +1046,3 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
   }
 };
 //--------------------
-

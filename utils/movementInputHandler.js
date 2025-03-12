@@ -17,28 +17,29 @@ export const  getIncomeConfig = (body) => ({
 });
 
 export const  getInvestmentConfig = (body) => ({
-  sourceAccountName: body.transactionTypeName === 'deposit' ? body.account : 'cash',
-  destinationAccountName: body.transactionTypeName === 'deposit' ? 'cash' : body.account,
-  sourceAccountTypeName: body.transactionTypeName === 'deposit' ? body.account : 'cash',
-  destinationAccountTypeName: body.transactionTypeName === 'deposit' ? 'cash' : body.account,
+  destinationAccountName : body.transactionTypeName === 'deposit' ? body.account : 'slack',
+ sourceAccountName: body.transactionTypeName === 'deposit' ? 'slack' : body.account,
+  sourceAccountTypeName:  body.transactionTypeName === 'deposit' ? 'bank' : 'investment',
+  destinationAccountTypeName: body.transactionTypeName === 'deposit' ? 'investment' : 'bank',
   sourceAccountTransactionType: 'withdraw',
   destinationAccountTransactionType: 'deposit',
 });
 
 export const  getPocketConfig = (body) => ({
-  sourceAccountName: body.transactionTypeName === 'deposit' ? body.account : 'cash',
-  destinationAccountName: body.transactionTypeName === 'deposit' ? 'cash' : body.account,
-  sourceAccountTypeName: body.transactionTypeName === 'deposit' ? body.account : 'cash',
-  destinationAccountTypeName: body.transactionTypeName === 'deposit' ? 'cash' : body.account,
+  destinationAccountName : body.transactionTypeName === 'deposit' ? body.account : 'slack',
+  sourceAccountName: body.transactionTypeName === 'deposit' ? 'slack' : body.account,
+  //los tipos de cuentas se deben determinar segun las cuentas seleccionadas. 
+  sourceAccountTypeName: body.transactionTypeName === 'deposit' ?  'bank':'pocket_saving' ,
+  destinationAccountTypeName: body.transactionTypeName === 'deposit' ? "pocket_saving":'bank',
   sourceAccountTransactionType: 'withdraw',
   destinationAccountTransactionType: 'deposit',
 });
 
 export const  getDebtorConfig = (body) => ({
-  sourceAccountName: body.transactionTypeName === 'lend' ? body.debtor : 'cash',
-  destinationAccountName: body.transactionTypeName === 'lend' ? 'cash' : body.debtor,
-  sourceAccountTypeName: body.transactionTypeName === 'lend' ? body.debtor : 'cash',
-  destinationAccountTypeName: body.transactionTypeName === 'lend' ? 'cash' : body.debtor,
+  destinationAccountName: body.transactionTypeName === 'lend' ? body.debtor : 'slack',
+  sourceAccountName: body.transactionTypeName === 'lend' ? 'slack' : body.debtor,
+  sourceAccountTypeName: body.transactionTypeName === 'lend' ? 'debtor' : 'slack',
+  destinationAccountTypeName: body.transactionTypeName === 'lend' ? 'slack' : 'debtor',
   sourceAccountTransactionType: 'borrow',
   destinationAccountTransactionType: 'lend',
 });

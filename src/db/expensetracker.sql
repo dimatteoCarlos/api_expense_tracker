@@ -85,6 +85,14 @@ ALTER TABLE movement_types
 ADD CONSTRAINT movment_types_movement_type_name_check
 CHECK (movement_type_name IN ('expense', 'income', 'investment', 'debt', 'pocket', 'transfer', 'receive'));
 
+--get the account info from user_id, account_type_name and account_name
+SELECT ua.* FROM user_accounts ua
+JOIN account_types act ON ua.account_type_id = act.account_type_id
+WHERE ua.user_id = '6e0ba475-bf23-4e1b-a125-3a8f0b3d352c' AND ua.account_name = $2
+AND act.account_type_name = 'bank'
+
+
+
 -- TO GET THE RESTRICTION NAME
 SELECT constraint_name
 FROM information_schema.table_constraints

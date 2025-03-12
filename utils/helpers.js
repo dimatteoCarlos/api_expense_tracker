@@ -1,4 +1,4 @@
-//
+//determine transaction type from sign of amount and account_type_name.
 export const determineTransactionType = (
   account_starting_amount,
   account_type_name

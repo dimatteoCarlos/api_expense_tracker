@@ -12,15 +12,11 @@ import {
   getDebtorConfig,
 } from '../../../utils/movementInputHandler.js';
 import { determineTransactionType } from '../../../utils/helpers.js';
+import { recordTransaction } from '../../../utils/recordTransaction.js';
 
-//createError, handlePostgressError
-//pool
-//determineTransactionType
-//recordTransaction
+//endpoint: put:/api/fintrack/transaction/transfer-between-accounts?user=UUID&&movement=expense
 
-//put:/api/fintrack/transaction/transfer-between-accounts?user=UUID&&movement=expense
-
-// functions
+// functions declaration
 //get the currency_id by the currency_code
 export const getCurrencyId = async (currency_code) => {
   const currencyQuery = `SELECT * FROM currencies WHERE currency_code = $1`;
@@ -66,7 +62,7 @@ export const getTransactionTypes = async () => {
   return transactionTypeArr;
 };
 
-const balanceMultiplierFn = (transactionTypeName) => {
+export const balanceMultiplierFn = (transactionTypeName) => {
   const negativeArr = ['withdraw', 'borrow', 'borrowing'];
   const trimTypeName = transactionTypeName.trim().toLowerCase();
   const mult = negativeArr.includes(trimTypeName) ? -1.0 : 1.0;
@@ -74,7 +70,7 @@ const balanceMultiplierFn = (transactionTypeName) => {
   return mult;
 };
 
-const updateAccountBalance = async (
+export const updateAccountBalance = async (
   newBalance,
   accountId,
   transactionActualDate
@@ -92,7 +88,7 @@ const updateAccountBalance = async (
 //------------------
 export const transferBetweenAccounts = async (req, res, next) => {
   console.log(pc.magentaBright('transferBetweenAccounts'));
-  //Previously create a named cash account. In the cases where a source or destination account is not known, a bank type account named "cash" is used
+  //Previously create a named slack account. In the cases where a source or destination account is not known, a bank type account named "slack" is used
   const client = await pool.connect();
   try {
     const { user: userId, movement: movementName } = req.query;
@@ -134,7 +130,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
       // return res.status(400).json({ status: 400, message });
     }
     //------------------
-    //since frontend input data form are controlled by selection options, then, data should be considered already validated from frontend. Also, frontend, gets the data from api server
+    //since frontend input data form are controlled by selection options, then, data should be considered already validated from frontend. Also, frontend, gets the data through this api
     //example:expense
     //movementName: expense, sourceAccountTypeName: 'bank', destinationAccountTypeName:'category_budget', sourceAccountTransactionType:withdraw, destinationAccountTransactionType:deposit,
 
@@ -163,22 +159,31 @@ export const transferBetweenAccounts = async (req, res, next) => {
     const sourceTransactionTypeId = transactionsTypes.filter(
       (type) => type.transaction_type_name === sourceAccountTransactionType
     )[0].transaction_type_id;
+
+    const destinationTransactionTypeId = transactionsTypes.filter(
+      (type) => type.transaction_type_name === destinationAccountTransactionType
+    )[0].transaction_type_id;
+
     console.log(
       '🚀 ~ transferBetweenAccounts ~ transactionsTypes:',
       sourceTransactionTypeId,
       'sourceAccountTransactionType',
-      sourceAccountTransactionType
+      sourceAccountTransactionType,
+      'destinationTransactionTypeId',
+      destinationTransactionTypeId
     );
+
     const accountTypes = await getAccountTypes();
-    //=========================
-    //-------common input data ----------------
-    if (amount < 0) {
+    //==============================================
+    //-------check common input data ----------------
+    //validate amount
+    const numericAmount = amount ? parseFloat(amount) : 0.0;
+    if (numericAmount < 0) {
       const message = 'Amount must be > 0. Tray again!';
       console.warn(pc.redBright(message));
       return res.status(400).json({ status: 400, message });
     }
-    const numericAmount = amount ? parseFloat(amount) : 0.0;
-
+    //validate currency
     const currencyIdReq = await getCurrencyId(currencyCode);
     if (!currencyIdReq) {
       throw new Error({
@@ -186,7 +191,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
         message: `Currency ${currencyCode} not found`,
       });
     }
-
+    //validate input date
     const { date: transactionActualDate } = req.body; //OJO revisar COMO LO ENVIA EL FRONTEND
     const transaction_actual_date =
       !transactionActualDate || transactionActualDate == ''
@@ -195,22 +200,30 @@ export const transferBetweenAccounts = async (req, res, next) => {
 
     console.log({ transaction_actual_date });
 
-    //-------account info-----------------------------
-    //source account info
+    //-------account info----------------------------
+    //source and destination account info
     const sourceAccountInfo = await getAccountInfo(
       sourceAccountName,
       sourceAccountTypeName,
       userId
     );
+    const destinationAccountInfo = await getAccountInfo(
+      destinationAccountName,
+      destinationAccountTypeName,
+      userId
+    );
+
     console.log('🚀 ~ sourceAccountInfo:', sourceAccountInfo);
 
-    if (!sourceAccountInfo) {
-      throw new Error({
+    if (!sourceAccountInfo || !destinationAccountInfo) {
+      // message: `Account  ${sourceAccountName} and type ${sourceAccountTypeName} not found`, // for individual message
+      const message = `Destination or Source account not found`;
+      return res.status(400).json({
         status: 404,
-        message: `Account  ${sourceAccountName} and type ${sourceAccountTypeName} not found`,
+        message: `Destination or Source account not found`,
       });
     }
-    //----here accountTypes and transactionsTypes info will be used
+
     //----source account
     const sourceAccountTypeid = accountTypes.filter(
       (type) => type.account_type_name === sourceAccountTypeName
@@ -237,11 +250,11 @@ export const transferBetweenAccounts = async (req, res, next) => {
       const message = `Not enough funds to transfer (${currencyCode} ${numericAmount} from account ${sourceAccountName} (${currencyCode} ${sourceAccountBalance})`;
       console.warn(pc.magentaBright(message));
 
-      if (sourceAccountName !== 'cash') {
-        return res.status(400).json({ status: 400, message });
+      if (sourceAccountName !== 'slack') {
+        return res.status(400).json({ status: 400, message }); //since slack account is fictional
       }
     }
-    //==================================================================
+    //===================================
     //pg transaction to insert data in user_accounts
     const newSourceAccountBalance =
       parseFloat(sourceAccountBalance) +
@@ -255,6 +268,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
     );
 
     const sourceAccountId = sourceAccountInfo.account_id;
+
     const updatedSourceAccountInfo = await updateAccountBalance(
       newSourceAccountBalance,
       sourceAccountId,
@@ -266,7 +280,35 @@ export const transferBetweenAccounts = async (req, res, next) => {
       'type of:',
       typeof sourceAccountBalance
     );
-    //-----------Register transaction
+    //-------------
+    //---Update the balance in the destination account
+    const destinationAccountBalance = destinationAccountInfo.account_balance;
+    const newDestinationAccountBalance =
+      parseFloat(destinationAccountBalance) +
+      numericAmount * balanceMultiplierFn(destinationAccountTransactionType);
+
+    console.log(
+      '🚀 ~ newdestinationAccountBalance:',
+      newDestinationAccountBalance,
+      '  typeof',
+      balanceMultiplierFn(destinationAccountTransactionType)
+    );
+
+    const destinationAccountId = destinationAccountInfo.account_id;
+
+    const updatedDestinationAccountInfo = await updateAccountBalance(
+      newDestinationAccountBalance,
+      destinationAccountId,
+      transaction_actual_date
+    );
+    console.log(
+      '🚀 ~ updateddestinationAccountInfo:',
+      updatedDestinationAccountInfo,
+      'type of:',
+      typeof destinationAccountBalance
+    );
+
+    //----Register trasnfer/receive transaction-----------------
     //-----------source transaction
     const transactionDescription = `${note}.Transaction: ${sourceAccountTransactionType}. Transfered ${currencyCode} ${numericAmount} from account ${sourceAccountName} of type: ${sourceAccountTypeName} account, to ${destinationAccountName} of type ${destinationAccountTypeName}.${transactionActualDate}`; //revisar formato de fecha
 
@@ -278,69 +320,73 @@ export const transferBetweenAccounts = async (req, res, next) => {
       newSourceAccountBalance,
       currencyIdReq,
       sourceAccountId,
-      // destination_account_id,
+      destinationAccountId,
       transaction_actual_date
     );
 
-    // const transactionOption = {
-    //   userId,
-    //   description: transactionDescription,
-    //   movement_type_id,
-    //   transaction_type_id, //deposit or lend
-    //   status: 'complete',
-    //   amount: account_balance, //initial balance
-    //   currency_id: currencyIdReq,
-    //   source_account_id,
-    //   destination_account_id,
-    //   transaction_actual_date,
-    // };
+    const sourceTransactionOption = {
+      userId,
+      description: transactionDescription,
+      movement_type_id,
+      transaction_type_id: sourceTransactionTypeId, //deposit or lend
+      status: 'complete',
+      amount: numericAmount * balanceMultiplierFn(sourceAccountTransactionType), //
+      currency_id: currencyIdReq,
+      source_account_id: sourceAccountId,
+      destination_account_id: destinationAccountId,
+      transaction_actual_date,
+    };
 
-    // recordTransaction(transactionOption);
+    await recordTransaction(sourceTransactionOption);
     //=========================================================
+    //-----------destination transaction
+    const transactionDescriptionReceived = `${note}.Transaction: ${sourceAccountTransactionType}. Received ${currencyCode} ${numericAmount} from account ${sourceAccountName} of type: ${sourceAccountTypeName} account, to ${destinationAccountName} of type ${destinationAccountTypeName}.${transactionActualDate}`; //revisar formato de fecha
 
+    console.log(
+      userId,
+      transactionDescriptionReceived,
+      movement_type_id,
+      sourceTransactionTypeId,
+      newDestinationAccountBalance,
+      numericAmount * balanceMultiplierFn(destinationAccountTransactionType), //
+
+      currencyIdReq,
+      sourceAccountId,
+      destinationAccountId,
+      transaction_actual_date
+    );
+
+    const destinationTransactionOption = {
+      userId,
+      description: transactionDescriptionReceived,
+      movement_type_id,
+      transaction_type_id: destinationTransactionTypeId, //withdraw or borrow
+      status: 'complete',
+      amount:
+        numericAmount * balanceMultiplierFn(destinationAccountTransactionType), //
+      currency_id: currencyIdReq,
+      source_account_id: sourceAccountId,
+      destination_account_id: destinationAccountId,
+      transaction_actual_date,
+    };
+
+    await recordTransaction(destinationTransactionOption);
+    //=======================================================
     await client.query('COMMIT');
 
     const message = 'Transaction completed successfully.';
-    console.log(pc.yellowBright(message));
+    console.log(pc.magentaBright(message));
     res.status(200).json({ status: 200, message });
+
   } catch (error) {
     await client.query('ROLLBACK');
     const { code, message } = handlePostgresError(error);
     console.error(
-      pc.red('when transfering between accounts'),
+      pc.red('error during transfer'),
       pc.magentaBright(message || 'something went wrong')
     );
     next(createError(code, message));
   } finally {
     client.release();
   }
-
-  // amount,
-  // currency_id,
-  // transaction_actual_date,
-
-  // source_account_id,
-  // transaction_type_id,
-  // destination_account_id,
-  // description,
-  // status,
-
-  //data from body
-  //chequear el tipo de movimiento req.
-  // y segun el tipo de transaction
-  //ajusta datos segun el requerimiento tipo de movimiento
-  //obtiene los id de los datos recibidos como nombres,
-  //valida montos
-  //check account detail info and balance for the accounts
-  //verificar existencia de las cuentas, y que los montos a transferir este de acuerdo con los balances de las cuentas
-  //Begin Transaction
-  //transfer from account
-  //Insert trnsaction records on transfering account
-
-  //acondicionar los datos para to receiving account
-
-  //Insert trnsaction records on transfering account
-
-  //mensaje de exito
-  //mensaje de erro
 };
