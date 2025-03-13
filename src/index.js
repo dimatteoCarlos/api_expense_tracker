@@ -196,7 +196,7 @@ app.use((err, req, response, next) => {
   response.status(errorStatus).json({
     message: errorMessage,
     status: errorStatus,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : err.stack ,
   });
 });
 

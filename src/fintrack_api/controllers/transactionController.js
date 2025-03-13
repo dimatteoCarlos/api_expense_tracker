@@ -9,9 +9,8 @@ import {
   getIncomeConfig,
   getInvestmentConfig,
   getPocketConfig,
-  getDebtorConfig,
+  getDebtConfig,
 } from '../../../utils/movementInputHandler.js';
-import { determineTransactionType } from '../../../utils/helpers.js';
 import { recordTransaction } from '../../../utils/recordTransaction.js';
 
 //endpoint: put:/api/fintrack/transaction/transfer-between-accounts?user=UUID&&movement=expense
@@ -116,19 +115,32 @@ export const transferBetweenAccounts = async (req, res, next) => {
       return res.status(400).json({ status: 400, message });
     }
     const movement_types = movement_typesResults.rows;
+    console.log(
+      '🚀 ~ transferBetweenAccounts ~ movement_types:',
+      movement_types
+    );
 
-    const movement_type_id = movement_types.filter(
+    const movement_type_idResult = movement_types.filter(
       (mov) => mov.movement_type_name === movementName.trim().toLowerCase()
-    )[0].movement_type_id;
+    );
+    console.log(
+      '🚀 ~ transferBetweenAccounts ~ movement_type_idResult:',
+      movement_type_idResult
+    );
 
-    if (!movement_type_id) {
-      const message = `${movementName} was not found. Try again`;
+    //MEJORAR VALIDACION DE MOVEMENT NAME DE DEBT
+    if (!movement_type_idResult) {
+      const message = `movement ${movementName} was not found. Try again`;
       console.warn(pc.magentaBright(message));
       console.log('🚀 ~ transferBetweenAccounts ~ message:', message);
       throw new Error({ status: 400, message });
       // console.warn(pc.magentaBright(message));
       // return res.status(400).json({ status: 400, message });
     }
+
+    const movement_type_id = movement_type_idResult[0].movement_type_id;
+
+    //VALIDAR TAMBIEN EL TIPO DE TRANSACTION
     //------------------
     //since frontend input data form are controlled by selection options, then, data should be considered already validated from frontend. Also, frontend, gets the data through this api
     //example:expense
@@ -142,7 +154,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
       income: getIncomeConfig(req.body),
       investment: getInvestmentConfig(req.body),
       pocket: getPocketConfig(req.body),
-      debtor: getDebtorConfig(req.body),
+      debt: getDebtConfig(req.body),
     }[movementName];
     console.log('🚀 ~ transferBetweenAccounts ~ config:', config);
 
@@ -232,27 +244,24 @@ export const transferBetweenAccounts = async (req, res, next) => {
       '🚀 ~ transferBetweenAccounts ~ accountTypes:',
       sourceAccountTypeid
     );
-    //------------------
-
-    //------------------
-    //---begin transaction---
+    //-------------------------
+    //-------------------------
+    //---begin transaction-----
     await client.query('BEGIN');
 
     //---Update the balance in the source account
     const sourceAccountBalance = sourceAccountInfo.account_balance;
-    console.log(
-      '🚀 ~ transferBetweenAccounts ~ sourceAccountBalance:',
-      sourceAccountBalance + 550
-    );
 
     //---check balance only for source account
-    if (sourceAccountBalance < numericAmount) {
+    if (
+      sourceAccountBalance < numericAmount &&
+      sourceAccountTypeName === 'bank'
+    ) {
       const message = `Not enough funds to transfer (${currencyCode} ${numericAmount} from account ${sourceAccountName} (${currencyCode} ${sourceAccountBalance})`;
       console.warn(pc.magentaBright(message));
 
-      if (sourceAccountName !== 'slack') {
-        return res.status(400).json({ status: 400, message }); //since slack account is fictional
-      }
+      //overdraft not allowed: bank-category_budget, bank-investment, bank-debtor , others: investment-investment, bank - bank,
+      //overdraft allowed: all-slack-all, income_source-all, debtor-debtor,  bank-debtor-bank,all-debtor-all
     }
     //===================================
     //pg transaction to insert data in user_accounts
@@ -310,7 +319,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
 
     //----Register trasnfer/receive transaction-----------------
     //-----------source transaction
-    const transactionDescription = `${note}.Transaction: ${sourceAccountTransactionType}. Transfered ${currencyCode} ${numericAmount} from account ${sourceAccountName} of type: ${sourceAccountTypeName} account, to ${destinationAccountName} of type ${destinationAccountTypeName}.${transactionActualDate}`; //revisar formato de fecha
+    const transactionDescription = `${note}.Transaction: ${sourceAccountTransactionType}. Transfered ${currencyCode} ${numericAmount} from account ${sourceAccountName} of type: ${sourceAccountTypeName} account, to ${destinationAccountName} of type ${destinationAccountTypeName}.${transactionActualDate.toLocaleString()}`; //revisar formato de fecha
 
     console.log(
       userId,
@@ -340,7 +349,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
     await recordTransaction(sourceTransactionOption);
     //=========================================================
     //-----------destination transaction
-    const transactionDescriptionReceived = `${note}.Transaction: ${sourceAccountTransactionType}. Received ${currencyCode} ${numericAmount} from account ${sourceAccountName} of type: ${sourceAccountTypeName} account, to ${destinationAccountName} of type ${destinationAccountTypeName}.${transactionActualDate}`; //revisar formato de fecha
+    const transactionDescriptionReceived = `${note}.Transaction: ${destinationAccountTransactionType}. Received ${currencyCode} ${numericAmount} from account ${sourceAccountName} of type: ${sourceAccountTypeName} account, to ${destinationAccountName} of type ${destinationAccountTypeName}.${transactionActualDate}`; //revisar formato de fecha
 
     console.log(
       userId,
@@ -349,7 +358,6 @@ export const transferBetweenAccounts = async (req, res, next) => {
       sourceTransactionTypeId,
       newDestinationAccountBalance,
       numericAmount * balanceMultiplierFn(destinationAccountTransactionType), //
-
       currencyIdReq,
       sourceAccountId,
       destinationAccountId,
@@ -369,22 +377,74 @@ export const transferBetweenAccounts = async (req, res, next) => {
       destination_account_id: destinationAccountId,
       transaction_actual_date,
     };
+    destinationTransactionOption.movement_type_id;
 
     await recordTransaction(destinationTransactionOption);
     //=======================================================
     await client.query('COMMIT');
+    //data response
+    const data = {
+      movement: { movement_type_name: movementName, movement_type_id },
+      source: {
+        account_info: {
+          account_name: sourceAccountName,
+          account_type: sourceAccountTypeName,
+          amount: numericAmount,
+          currency: currencyCode,
+        },
+        balance_updated: {
+          amount_affected: sourceTransactionOption.amount,
+          new_balance: newSourceAccountBalance,
+        },
+        transaction_info: {
+          transaction_type: sourceAccountTransactionType,
+          transaction_description: transactionDescription,
+          transaction_id: sourceTransactionOption.transaction_id,
+          transaction_date: transaction_actual_date,
+        },
+      },
+
+      destination: {
+        account_info: {
+          account_name: destinationAccountName,
+          account_type: destinationAccountTypeName,
+          amount: numericAmount,
+          currency: currencyCode,
+        },
+        balance_updated: {
+          amount_affected: destinationTransactionOption.amount,
+          new_balance: newDestinationAccountBalance,
+        },
+        transaction_info: {
+          transaction_type: destinationAccountTransactionType,
+          transaction_description: transactionDescriptionReceived,
+          transaction_id: destinationTransactionOption.transaction_id,
+          transaction_date: transaction_actual_date,
+        },
+      },
+    };
 
     const message = 'Transaction completed successfully.';
     console.log(pc.magentaBright(message));
-    res.status(200).json({ status: 200, message });
 
+    res.status(200).json({ status: 200, message, data });
   } catch (error) {
     await client.query('ROLLBACK');
+    // const { code, message } = handlePostgresError(error);
+    if (error instanceof Error) {
+      console.error(
+        pc.red('Error during transfer'),
+        pc.magentaBright(error.stack || error.message)
+      );
+    } else {
+      console.error(
+        pc.red('Error during transfer'),
+        pc.magentaBright('Unknown error occurred')
+      );
+    }
+
+    // Manejo de errores de PostgreSQL
     const { code, message } = handlePostgresError(error);
-    console.error(
-      pc.red('error during transfer'),
-      pc.magentaBright(message || 'something went wrong')
-    );
     next(createError(code, message));
   } finally {
     client.release();
