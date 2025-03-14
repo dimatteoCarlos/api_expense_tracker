@@ -17,26 +17,25 @@ const errorColor = 'red';
 export const getAccountByType = async (req, res, next) => {
   console.log(pc[backendColor]('getAccountByType'));
 
-
   try {
-
-
     const { type, user: userId } = req.query;
 
     const accountType = type.trim().toLowerCase();
+
+    console.log('🚀 ~ getAccountByType ~ accountType:', accountType);
 
     if (!accountType || !userId) {
       const message = `User ID and bank type are required.Try again.`;
       console.warn(pc[backendColor](message));
       return res.status(400).json({ status: 400, message });
     }
-
+    //type: bank = investment = income_source
 
     const accountTypeQuery = {
       bank: {
-       
-         typeQuery: {
-           text: `SELECT ua.account_id, ua.account_name, ua.account_balance,  ct.currency_code, act.account_type_id, act.account_type_name 
+        typeQuery: {
+          text: `SELECT ua.account_id, ua.account_name, ua.account_balance,  ct.currency_code, act.account_type_id, act.account_type_name,
+          ua.account_starting_amount,  ua.account_start_date
        FROM user_accounts ua
        JOIN account_types act ON ua.account_type_id = act.account_type_id
        JOIN currencies ct ON ua.currency_id = ct.currency_id
@@ -44,15 +43,16 @@ export const getAccountByType = async (req, res, next) => {
        AND act.account_type_name = $2 AND ua.account_name != $3
        ORDER BY ua.account_balance DESC
        `,
-           values: [userId, accountType, 'slack'],
-         },
-       },
-   
+          values: [userId, accountType, 'slack'],
+        },
+      },
+
       category_budget: {
-         typeQuery: {
-           text: `SELECT ua.account_id, ua.account_name, ua.account_balance, 
+        typeQuery: {
+          text: `SELECT ua.account_id, ua.account_name, ua.account_balance, 
    act.account_type_name,
-   ct.currency_code, cba.budget, cnt.category_nature_type_name
+   ct.currency_code, cba.budget, cnt.category_nature_type_name,
+     ua.account_starting_amount,  ua.account_start_date
    FROM user_accounts ua
    JOIN account_types act ON ua.account_type_id = act.account_type_id
    JOIN currencies ct ON ua.currency_id = ct.currency_id
@@ -60,14 +60,75 @@ export const getAccountByType = async (req, res, next) => {
    JOIN category_nature_types cnt ON cba.category_nature_type_id = cnt.category_nature_type_id
    WHERE ua.user_id =$1
    AND act.account_type_name = $2 AND ua.account_name != $3
-   ORDER BY ua.account_balance DESC
+   ORDER BY ABS(ua.account_balance) DESC
        `,
-           values: [userId, accountType, 'slack'],
-         },
-       },
-     };
+          values: [userId, accountType, 'slack'],
+        },
+      },
 
+      income_source: {
+        typeQuery: {
+          text: `SELECT ua.account_id, ua.account_name, ua.account_balance, act.account_type_name, ct.currency_code, 
+            ua.account_starting_amount,  ua.account_start_date
+FROM user_accounts ua
+JOIN account_types act ON ua.account_type_id = act.account_type_id
+JOIN currencies ct ON ua.currency_id = ct.currency_id
+  WHERE ua.user_id =$1
+  AND act.account_type_name = $2 AND ua.account_name != $3
+  ORDER BY ABS(ua.account_balance) DESC
+      `,
+          values: [userId, accountType, 'slack'],
+        },
+      },
 
+      investment: {
+        typeQuery: {
+          text: `SELECT ua.account_id, ua.account_name, ua.account_balance, act.account_type_name, ct.currency_code, 
+            ua.account_starting_amount,  ua.account_start_date
+FROM user_accounts ua
+JOIN account_types act ON ua.account_type_id = act.account_type_id
+JOIN currencies ct ON ua.currency_id = ct.currency_id
+  WHERE ua.user_id =$1
+  AND act.account_type_name = $2 AND ua.account_name != $3
+  ORDER BY ABS(ua.account_balance) DESC
+      `,
+          values: [userId, accountType, 'slack'],
+        },
+      },
+
+      pocket_saving: {
+        typeQuery: {
+          text: `SELECT ua.account_id, ua.account_name, ua.account_balance, act.account_type_name, ct.currency_code, ps.target, ps.desired_date, ps.account_start_date, 
+            ua.account_starting_amount,  ua.account_start_date
+FROM user_accounts ua
+JOIN account_types act ON ua.account_type_id = act.account_type_id
+JOIN currencies ct ON ua.currency_id = ct.currency_id
+JOIN pocket_saving_accounts ps ON ua.account_id = ps.account_id
+  WHERE ua.user_id =$1
+  AND act.account_type_name = $2 AND ua.account_name != $3
+  ORDER BY ps.target DESC,  ABS(ua.account_balance) DESC
+      `,
+          values: [userId, accountType, 'slack'],
+        },
+      },
+
+      debtor: {
+        typeQuery: {
+          text: `SELECT ua.account_id, ua.account_name, ua.account_balance, act.account_type_name, ct.currency_code,
+          ps. value as starting_value, ps.debtor_name, ps.debtor_lastname, ps.selected_account_name,  ps.account_start_date, 
+            ua.account_starting_amount,  ua.account_start_date
+FROM user_accounts ua
+JOIN account_types act ON ua.account_type_id = act.account_type_id
+JOIN currencies ct ON ua.currency_id = ct.currency_id
+JOIN debtor_accounts ps ON ua.account_id = ps.account_id
+  WHERE ua.user_id =$1
+  AND act.account_type_name = $2 AND ua.account_name != $3
+  ORDER BY  (ua.account_balance) ASC
+      `,
+          values: [userId, accountType, 'slack'],
+        },
+      },
+    };
 
     //check account type on ddbb
     //es necesario chequear si el usuario tiene ese tipo de cuentas?
@@ -84,7 +145,9 @@ export const getAccountByType = async (req, res, next) => {
       values: [userId, accountType, 'slack'],
     };
 */
-    const accountListResult = await pool.query(accountTypeQuery[accountType].typeQuery);
+    const accountListResult = await pool.query(
+      accountTypeQuery[accountType].typeQuery
+    );
 
     // const accountListResult = await pool.query(accountTypeQuery);
 
