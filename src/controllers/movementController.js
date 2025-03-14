@@ -1,4 +1,4 @@
-//movementController: getMovement, addMovement, getDashboardMovementsInformation, 
+//movementController: getMovement, addMovement, getDashboardMovementsInformation,
 
 // import { pool } from '../db/configDB.js';
 // import {
@@ -213,7 +213,7 @@
 
 //     await client.query('COMMIT');
 
-//     const message = 'Transaction completed successfully.';
+//     const message = 'Transaction successfully completed.';
 //     console.log(pc.greenBright(message));
 //     return res.status(200).json({ status: 200, message });
 //   } catch (error) {
@@ -366,7 +366,7 @@
 
 //     await client.query('COMMIT');
 
-//     const message = 'Transaction completed successfully.';
+//     const message = 'Transaction successfully completed.';
 //     console.log(pc.yellowBright(message));
 //     res.status(200).json({ status: 200, message });
 //   } catch (error) {
@@ -532,7 +532,7 @@
 //       values: [userId],
 //     });
 
-//     const message = 'Dashboard info completed successfully.';
+//     const message = 'Dashboard info successfully completed.';
 //     console.log(pc.yellowBright(message));
 //     return res.status(200).json({
 //       status: 200,

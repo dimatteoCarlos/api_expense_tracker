@@ -18,7 +18,7 @@ export async function recordTransaction(options) {
       destination_account_id,
       transaction_actual_date,
     } = options;
-    console.log("🚀 ~ recordTransaction ~ options:", options)
+    console.log('🚀 ~ recordTransaction ~ options:', options);
 
     //start the transaction
     // await client.pool.query('BEGIN');
@@ -40,7 +40,7 @@ export async function recordTransaction(options) {
     });
     // console.log(transactionResult.rows[0]);
     // await client.query('COMMIT');
-    const message = 'Transaction completed successfully.';
+    const message = 'Transaction successfully completed.';
     console.log(pc.yellowBright(message));
 
     return transactionResult.rows[0];
@@ -49,5 +49,5 @@ export async function recordTransaction(options) {
     const message = error.message || `Error when recording transaction.`;
     console.error(pc.redBright(message), 'from record transaction');
     throw handlePostgresError(error);
-  } 
+  }
 }

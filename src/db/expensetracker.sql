@@ -39,7 +39,7 @@ SELECT  account_id, account_name
     WHERE user_id = $1
     ORDER BY account_id ASC
 
--- Get all user accounta info by user id and account name,
+-- Get all user account info by user id and account name,
 SELECT * FROM users_accounts WHERE user_id = $1 AND account_name ILIKE $2 ORDER BY account_name;
 
 -- {text:`SELECT * FROM users_accounts WHERE user_id = $1 AND account_name ILIKE $2  ORDER BY account_name`, values: [userId, `%${account_name}%`]}
@@ -77,7 +77,7 @@ GROUP BY
 EXTRACT(MONTH FROM created_at), tr.movement_type_id, mt.movement_type_name
 
 
--- change the check restriction on movment_types table
+-- change the check restriction on movement_types table
 ALTER TABLE movement_types
 DROP CONSTRAINT movement_types_movement_type_name_check
 
@@ -91,12 +91,36 @@ JOIN account_types act ON ua.account_type_id = act.account_type_id
 WHERE ua.user_id = '6e0ba475-bf23-4e1b-a125-3a8f0b3d352c' AND ua.account_name = $2
 AND act.account_type_name = 'bank'
 
+--usage in: movement expense, 
+--get user account name and account id by user_id and account_type_name ='bank'
+SELECT ua.account_id, ua.account_name, ua.account_balance,  ct.currency_code, act.account_type_id, act.account_type_name 
+      FROM user_accounts ua
+      JOIN account_types act ON ua.account_type_id = act.account_type_id
+      JOIN currencies ct ON ua.currency_id = ct.currency_id
+      WHERE ua.user_id = $1
+      AND act.account_type_name = $2 AND ua.account_name != $3
+      ORDER BY ua.account_balance DESC
 
+
+--get user account info by user_id and account_type_name ='category_budget'
+SELECT ua.account_id, ua.account_name, ua.account_balance, 
+act.account_type_name,
+ct.currency_code, cba.budget, cnt.category_nature_type_name
+FROM user_accounts ua
+JOIN account_types act ON ua.account_type_id = act.account_type_id
+JOIN currencies ct ON ua.currency_id = ct.currency_id
+JOIN category_budget_accounts cba ON ua.account_id = cba.account_id
+JOIN category_nature_types cnt ON cba.category_nature_type_id = cnt.category_nature_type_id
+WHERE ua.user_id = '6e0ba475-bf23-4e1b-a125-3a8f0b3d352c'
+AND act.account_type_name = 'category_budget' AND ua.account_name != 'slack'
+ORDER BY ua.account_balance DESC
 
 -- TO GET THE RESTRICTION NAME
 SELECT constraint_name
 FROM information_schema.table_constraints
 WHERE table_name = 'movement_types' AND constraint_type = 'CHECK';
+
+--
 
 --TO ADD CONSTRAINT
 -- ALTER TABLE transactions

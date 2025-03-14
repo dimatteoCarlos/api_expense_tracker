@@ -212,7 +212,7 @@ export const addTransaction = async (req, res, next) => {
 
     await client.query('COMMIT');
 
-    const message = 'Transaction completed successfully.';
+    const message = 'Transaction successfully completed.';
     console.log(pc.greenBright(message));
     return res.status(200).json({ status: 200, message });
   } catch (error) {
@@ -368,7 +368,7 @@ export const transferMoneyToAccount = async (req, res, next) => {
 
     await client.query('COMMIT');
 
-    const message = 'Transaction completed successfully.';
+    const message = 'Transaction successfully completed.';
     console.log(pc.yellowBright(message));
     res.status(200).json({ status: 200, message });
   } catch (error) {
@@ -537,7 +537,7 @@ export const getDashboardInformation = async (req, res, next) => {
       values: [userId],
     });
 
-    const message = 'Dashboard info completed successfully.';
+    const message = 'Dashboard info successfully completed.';
     console.log(pc.yellowBright(message));
     return res.status(200).json({
       status: 200,

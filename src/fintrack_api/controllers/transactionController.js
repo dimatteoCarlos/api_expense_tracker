@@ -87,7 +87,8 @@ export const updateAccountBalance = async (
 //------------------
 export const transferBetweenAccounts = async (req, res, next) => {
   console.log(pc.magentaBright('transferBetweenAccounts'));
-  //Previously create a named slack account. In the cases where a source or destination account is not known, a bank type account named "slack" is used
+  //Previously create a named slack account bank type. In the cases where a source or destination account is not known, a bank type account named "slack" is used as a counterpart of the transaction.
+
   const client = await pool.connect();
   try {
     const { user: userId, movement: movementName } = req.query;
@@ -318,8 +319,9 @@ export const transferBetweenAccounts = async (req, res, next) => {
     );
 
     //----Register trasnfer/receive transaction-----------------
-    //-----------source transaction
-    const transactionDescription = `${note}.Transaction: ${sourceAccountTransactionType}. Transfered ${currencyCode} ${numericAmount} from account ${sourceAccountName} of type: ${sourceAccountTypeName} account, to ${destinationAccountName} of type ${destinationAccountTypeName}.${transactionActualDate.toLocaleString()}`; //revisar formato de fecha
+    //-----------source transaction-----------------------------
+    const transactionDescription = `${note}.Transaction: ${sourceAccountTransactionType}. Transfered ${currencyCode} ${numericAmount} from account "${sourceAccountName}" of type: "${sourceAccountTypeName}" account, to "${destinationAccountName}" of type ${destinationAccountTypeName}.${transactionActualDate.toLocaleString()}`;
+    //revisar formato de fecha
 
     console.log(
       userId,
@@ -348,7 +350,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
 
     await recordTransaction(sourceTransactionOption);
     //=========================================================
-    //-----------destination transaction
+    //-----------destination transaction-----------------------
     const transactionDescriptionReceived = `${note}.Transaction: ${destinationAccountTransactionType}. Received ${currencyCode} ${numericAmount} from account ${sourceAccountName} of type: ${sourceAccountTypeName} account, to ${destinationAccountName} of type ${destinationAccountTypeName}.${transactionActualDate}`; //revisar formato de fecha
 
     console.log(
@@ -393,7 +395,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
           currency: currencyCode,
         },
         balance_updated: {
-          amount_affected: sourceTransactionOption.amount,
+          amount_transaction: sourceTransactionOption.amount,
           new_balance: newSourceAccountBalance,
         },
         transaction_info: {
@@ -412,7 +414,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
           currency: currencyCode,
         },
         balance_updated: {
-          amount_affected: destinationTransactionOption.amount,
+          amount_transaction: destinationTransactionOption.amount,
           new_balance: newDestinationAccountBalance,
         },
         transaction_info: {
@@ -424,7 +426,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
       },
     };
 
-    const message = 'Transaction completed successfully.';
+    const message = 'Transaction successfully completed.';
     console.log(pc.magentaBright(message));
 
     res.status(200).json({ status: 200, message, data });

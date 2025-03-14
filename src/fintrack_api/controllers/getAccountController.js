@@ -12,10 +12,15 @@ const errorColor = 'red';
 //get account info: id, name, type, currency and balance, by user id and account_type
 
 //endpoint: http://localhost:5000/api/fintrack/account/type/?type=bank&user=6e0ba475-bf23-4e1b-a125-3a8f0b3d352c
+//type can be: bank, category_budget,
 
 export const getAccountByType = async (req, res, next) => {
   console.log(pc[backendColor]('getAccountByType'));
+
+
   try {
+
+
     const { type, user: userId } = req.query;
 
     const accountType = type.trim().toLowerCase();
@@ -26,10 +31,48 @@ export const getAccountByType = async (req, res, next) => {
       return res.status(400).json({ status: 400, message });
     }
 
+
+    const accountTypeQuery = {
+      bank: {
+       
+         typeQuery: {
+           text: `SELECT ua.account_id, ua.account_name, ua.account_balance,  ct.currency_code, act.account_type_id, act.account_type_name 
+       FROM user_accounts ua
+       JOIN account_types act ON ua.account_type_id = act.account_type_id
+       JOIN currencies ct ON ua.currency_id = ct.currency_id
+       WHERE ua.user_id = $1
+       AND act.account_type_name = $2 AND ua.account_name != $3
+       ORDER BY ua.account_balance DESC
+       `,
+           values: [userId, accountType, 'slack'],
+         },
+       },
+   
+      category_budget: {
+         typeQuery: {
+           text: `SELECT ua.account_id, ua.account_name, ua.account_balance, 
+   act.account_type_name,
+   ct.currency_code, cba.budget, cnt.category_nature_type_name
+   FROM user_accounts ua
+   JOIN account_types act ON ua.account_type_id = act.account_type_id
+   JOIN currencies ct ON ua.currency_id = ct.currency_id
+   JOIN category_budget_accounts cba ON ua.account_id = cba.account_id
+   JOIN category_nature_types cnt ON cba.category_nature_type_id = cnt.category_nature_type_id
+   WHERE ua.user_id =$1
+   AND act.account_type_name = $2 AND ua.account_name != $3
+   ORDER BY ua.account_balance DESC
+       `,
+           values: [userId, accountType, 'slack'],
+         },
+       },
+     };
+
+
+
     //check account type on ddbb
     //es necesario chequear si el usuario tiene ese tipo de cuentas?
 
-    const accountTypeQuery = {
+    /*const accountTypeQuery = {
       text: `SELECT ua.account_id, ua.account_name, ua.account_balance,  ct.currency_code, act.account_type_id, act.account_type_name 
       FROM user_accounts ua
       JOIN account_types act ON ua.account_type_id = act.account_type_id
@@ -40,8 +83,10 @@ export const getAccountByType = async (req, res, next) => {
       `,
       values: [userId, accountType, 'slack'],
     };
+*/
+    const accountListResult = await pool.query(accountTypeQuery[accountType].typeQuery);
 
-    const accountListResult = await pool.query(accountTypeQuery);
+    // const accountListResult = await pool.query(accountTypeQuery);
 
     if (accountListResult.rows.length === 0) {
       const message = `No accounts of type: "${accountType}" available`;
