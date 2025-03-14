@@ -115,6 +115,8 @@ WHERE ua.user_id = '6e0ba475-bf23-4e1b-a125-3a8f0b3d352c'
 AND act.account_type_name = 'category_budget' AND ua.account_name != 'slack'
 ORDER BY ua.account_balance DESC
 
+--ESTAN FALTANTDO: INCOME_SOURCE, INVESTMENT, POCKET_SAVING Y DEBTOR
+
 -- TO GET THE RESTRICTION NAME
 SELECT constraint_name
 FROM information_schema.table_constraints
