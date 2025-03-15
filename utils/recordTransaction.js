@@ -18,7 +18,7 @@ export async function recordTransaction(options) {
       destination_account_id,
       transaction_actual_date,
     } = options;
-    console.log('🚀 ~ recordTransaction ~ options:', options);
+    // console.log('🚀 ~ recordTransaction ~ options:', options);
 
     //start the transaction
     // await client.pool.query('BEGIN');
