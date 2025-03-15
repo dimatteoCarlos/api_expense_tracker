@@ -40,8 +40,8 @@ export async function recordTransaction(options) {
     });
     // console.log(transactionResult.rows[0]);
     // await client.query('COMMIT');
-    const message = 'Transaction successfully completed.';
-    console.log(pc.yellowBright(message));
+    // const message = 'Transaction successfully completed.';
+    // console.log(pc.yellowBright(message));
 
     return transactionResult.rows[0];
   } catch (error) {
