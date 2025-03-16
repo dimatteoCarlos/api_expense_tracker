@@ -29,18 +29,84 @@ import { pool } from '../../db/configDB.js';
 //empezar con el frontend de la aplicacion de espenses tipo sitio web, y dejar fintrack para cuando quieran reunirse para aclarar lo que hace falta definiri y se hagan los disenios que faltan. Asi, avanzo en aplicar mantine y otras tecnologias como next js con backend y type script.
 //----------otro tipo de aplicaciones
 
-//----------------------------------------------
-export const dashboardTotalBalanceAccount = async (req, res, next) => {
-  const backendColor = 'cyan';
-  const errorColor = 'red';
+// get: //http://localhost:5000/api/fintrack/dashboard/balance
 
+export const dashboardTotalBalanceAccounts = async (req, res, next) => {
   const RESPONSE = (res, status, message, data = null) => {
     console.log(pc[backendColor](message));
 
     res.status(status).json({ status, message, data });
   };
 
-  console.log(pc[backendColor]('dashboardTotalBalanceAccount'));
+  const backendColor = 'green';
+  const errorColor = 'red';
+  console.log(pc[backendColor]('dashboardTotalBalanceAccountByType'));
+
+  try {
+    const { user: userId } = req.query;
+
+    if (!userId) {
+      return RESPONSE(res, 400, 'User ID is required');
+    }
+
+    const successMsg = `Total balance accounts were successfully calculated`;
+
+    const TOTAL_BALANCE_QUERY = {
+      text: `SELECT act.account_type_name, SUM(ua.account_balance) as total_balance, ct.currency_code FROM user_accounts ua
+JOIN account_types act ON ua.account_type_id = act.account_type_id
+JOIN currencies ct ON ua.currency_id = ct.currency_id
+WHERE user_id = $1 AND ua.account_name!=$2
+GROUP BY act.account_type_name, ct.currency_code
+ORDER BY account_type_name ASC
+`,
+      values: [userId, 'slack'],
+    };
+
+    const accountTotalBalanceResult = await pool.query(TOTAL_BALANCE_QUERY);
+    if (accountTotalBalanceResult.rows.length === 0) {
+      const message = `No available accounts or something went wrong`;
+      console.warn(pc[errorColor](message));
+      return RESPONSE(res, 400, message);
+    }
+
+    const accountTotalBalance = accountTotalBalanceResult.rows;
+    const data = {
+      rows: accountTotalBalanceResult.rows.length,
+      accountTotalBalance,
+    };
+    console.log(data);
+    return RESPONSE(res, 200, successMsg, data);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(pc.red('Error while getting account balances'));
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(error.stack);
+      }
+    } else {
+      console.error(
+        pc.red('Something went wrong'),
+        pc[errorColor]('Unknown error occurred')
+      );
+    }
+    // Manejo de errores de PostgreSQL
+    const { code, message } = handlePostgresError(error);
+    next(createError(code, message));
+    // return ERROR_RESPONSE(error, next)
+  }
+};
+
+//===========================================================
+//get: //http://localhost:5000/api/fintrack/dashboard/balance/type
+export const dashboardTotalBalanceAccountByType = async (req, res, next) => {
+  const backendColor = 'cyan';
+  const errorColor = 'red';
+  const RESPONSE = (res, status, message, data = null) => {
+    console.log(pc[backendColor](message));
+    res.status(status).json({ status, message, data });
+  };
+
+  console.log(pc[backendColor]('dashboardTotalBalanceAccountByType'));
 
   try {
     const { type, user: userId } = req.query;
@@ -51,7 +117,7 @@ export const dashboardTotalBalanceAccount = async (req, res, next) => {
       return RESPONSE(res, 400, 'User ID and account TYPE are required');
     }
 
-    const successMsg = `Total balance account of type ${accountType} successfully calculated`;
+    const successMsg = `Total balance account of account type ${accountType} successfully calculated`;
 
     const TOTAL_BALANCE_QUERY = {
       text: `SELECT SUM(ua.account_balance) as total_balance FROM user_accounts ua
@@ -94,10 +160,8 @@ WHERE user_id = $1 AND act.account_type_name = $2 AND ua.account_name!=$3
         values: [userId, accountType, 'slack'],
       },
     };
-
     //------queries
     //WRITE VALIDATION OF ACCOUNTTYPE HERE
-
     if (
       accountType == 'bank' ||
       accountType == 'investment' ||
@@ -124,7 +188,6 @@ WHERE user_id = $1 AND act.account_type_name = $2 AND ua.account_name!=$3
 
       return RESPONSE(res, 200, successMsg, data);
     }
-
     //-------
     //INCOME SOURCE ACCOUNTS JUST NEGATIVe VALUES
     if (accountType === 'income_source') {
@@ -145,7 +208,6 @@ WHERE user_id = $1 AND act.account_type_name = $2 AND ua.account_name!=$3
 
       const data = accountTotalBalanceResult.rows[0];
       console.log(data);
-
       return RESPONSE(res, 200, successMsg, data);
     }
 
@@ -181,7 +243,6 @@ WHERE user_id = $1 AND act.account_type_name = $2 AND ua.account_name!=$3
   } catch (error) {
     if (error instanceof Error) {
       console.error(pc.red('Error while getting account balances'));
-
       if (process.env.NODE_ENV === 'development') {
         console.log(error.stack);
       }

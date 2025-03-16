@@ -10,7 +10,7 @@ import { determineTransactionType } from '../../../utils/helpers.js';
 import { recordTransaction } from '../../../utils/recordTransaction.js';
 //import { validateAndNormalizeDate } from '../../../utils/helpers.js';
 //post: /api/fintrack/account/new_account/account_type_name?user='UUID'
-
+//use this only for ban, income_source and investment accounts
 export const createBasicAccount = async (req, res, next) => {
   //basic_account_data:  userId,account_type_name,currency_code,amount,account_start_date,account_starting_amount
   //account types: bank, income_sorce, investment. Also, cash and slack attribute accounts
@@ -48,16 +48,17 @@ export const createBasicAccount = async (req, res, next) => {
       amount,
       date,
       transactionActualDate,
-      sourceAccountId,
+      sourceAccountId, //adaptar para cambiar a sourceAccountTypeName
     } = req.body;
 
     //check for the account_type_name = bank
     //check coherence of type account requested
     const typeAccountRequested = req.originalUrl.split('/').pop().split('?')[0];
 
+//hay que decidir como introducir el tipo de cuenta, por una sola via
     if (account_type_name) {
       const checkTypeCoherence = typeAccountRequested === account_type_name;
-      if (!checkTypeCoherence) {
+      if (!checkTypeCoherence || !typeAccountRequested) {
         const message = `Check coherence between account type requested on url: ${typeAccountRequested.toUpperCase()} vs account type entered: ${account_type_name.toUpperCase()}`;
         console.warn('Warning:', pc.cyanBright(message));
         throw new Error(message);
@@ -65,6 +66,7 @@ export const createBasicAccount = async (req, res, next) => {
     }
     //---
     const account_start_date = !!date && date !== '' ? date : new Date();
+
     const transaction_actual_date =
       !transactionActualDate || transactionActualDate == ''
         ? new Date()
@@ -102,12 +104,15 @@ export const createBasicAccount = async (req, res, next) => {
     const accountTypeQuery = `SELECT * FROM account_types`;
     const accountTypeResult = await pool.query(accountTypeQuery);
     const accountTypeArr = accountTypeResult.rows;
-    console.log('🚀 ~ createAccount ~ accountTypeArr:', accountTypeArr, 'ueste', accountTypeArr[0]);
+
+    // console.log('🚀 ~ createAccount ~ accountTypeArr:', accountTypeArr,  accountTypeArr[0]);
 
     const accountTypeIdReqObj = accountTypeArr.filter(
       (type) => type.account_type_name == account_type_name.trim()
     )[0];
+
     const accountTypeIdReq = accountTypeIdReqObj.account_type_id;
+
     console.log('🚀 ~ createAccount ~ account_type_id:', accountTypeIdReq);
     //---
     //verify account existence in user_accounts by userId and account name
@@ -129,6 +134,7 @@ export const createBasicAccount = async (req, res, next) => {
       console.log(pc.blueBright(message));
       throw new Error(message);
     }
+
     //---
     //get currency id from currency_code requested
     const currencyQuery = `SELECT * FROM currencies`;
@@ -137,13 +143,14 @@ export const createBasicAccount = async (req, res, next) => {
     const currencyIdReq = currencyArr.filter(
       (currency) => currency.currency_code === currency_code
     )[0].currency_id;
+
     console.log('🚀 ~ createAccount ~ currencyIdReq:', currencyIdReq);
 
     //pg transaction to insert data  in user_accounts
     await client.query('BEGIN');
-    console.log({ account_start_date });
-    const account_balance = account_starting_amount;
+    // console.log({ account_start_date });
 
+    const account_balance = account_starting_amount;
     const insertQuery = {
       text: `INSERT INTO user_accounts(user_id,
       account_name,
@@ -170,17 +177,18 @@ export const createBasicAccount = async (req, res, next) => {
     const message = `${account_name} account of type ${account_type_name} with ${account_id} id was successfully created `;
     console.log('🚀 ~ createAccount ~ message:', message);
 
+    //----------------------------------------------------
+
     //-----------Register transaction
     //Add deposit transaction
     //movement_type_name:receive, movement_type_id: 8, transaction_type_name:deposit/account-opening, transaction_type_id: 2/5
     //nombre de la cuenta principal- tipo de cuenta -initial Deposit
 
-    //*******tratar de tomar los valores dinamicamente de la consulta de base de datos sobre tipo de transaccion y tipo de movimiento en cuanto a id y a name
-
     const transactionTypeDescription = determineTransactionType(
       account_balance,
       account_type_name
     );
+
     const transaction_type_idResult = await pool.query({
       text: `SELECT transaction_type_id FROM transaction_types WHERE transaction_type_name = $1`,
       values: [transactionTypeDescription],
@@ -227,6 +235,7 @@ export const createBasicAccount = async (req, res, next) => {
     recordTransaction(transactionOption);
 
     //actualizar balance en cuenta slack
+
     //registrar movements
 
     await client.query('COMMIT');
@@ -282,7 +291,7 @@ export const createDebtorAccount = async (req, res, next) => {
       debtor_name,
       value,
       selected_account_name, //QUE ES ESTA CUENTA EN DEBTOR INPUT?
-      sourceAccountId,
+      sourceAccountId, //optional
       type: debtor_transaction_type, //aqui type es el tipo de transaction, mientras que en los otras cuentas es el tipo de cuenta OJO!!! VERIFICAR COMO SERA EN EL FRONTEND
     } = req.body;
 

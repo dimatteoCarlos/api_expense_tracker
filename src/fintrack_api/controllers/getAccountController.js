@@ -145,8 +145,7 @@ JOIN debtor_accounts ps ON ua.account_id = ps.account_id
 
     //devolver el nombre de la cuenta, (balance actual), currency_code
 
-    const data = accountList;
-
+    const data = { rows: accountList.length, accountList };
     const message = `Account list successfully completed `;
     console.log('success:', pc[backendColor](message));
 
@@ -170,7 +169,7 @@ JOIN debtor_accounts ps ON ua.account_id = ps.account_id
   }
 };
 //***************************************************/
-//endpoint: http://localhost:5000/api/fintrack/account/all-accounts/?user=6e0ba475-bf23-4e1b-a125-3a8f0b3d352c
+//endpoint: http://localhost:5000/api/fintrack/account/allAccounts/?user=6e0ba475-bf23-4e1b-a125-3a8f0b3d352c
 
 export const getAccounts = async (req, res, next) => {
   console.log(pc[backendColor]('getAccounts'));
@@ -211,7 +210,7 @@ export const getAccounts = async (req, res, next) => {
     }
     const accountList = accountListResult.rows;
 
-    const data = accountList;
+    const data = { rows: accountList.length, accountList };
 
     const message = `Account list successfully completed `;
     console.log('success:', pc[backendColor](message));
@@ -382,7 +381,7 @@ JOIN debtor_accounts da ON ua.account_id = da.account_id
     const accountList = accountListResult.rows;
     //devolver el nombre de la cuenta, (balance actual), currency_code
 
-    const data = accountList;
+    const data = { rows: accountList.length, accountList };
 
     const message = `Account list successfully completed `;
     console.log('success:', pc[backendColor](message));

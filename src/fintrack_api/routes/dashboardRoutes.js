@@ -1,8 +1,9 @@
 import express from 'express';
-import { dashboardTotalBalanceAccount } from '../controllers/dashboardController.js';
+import { dashboardTotalBalanceAccountByType, dashboardTotalBalanceAccounts } from '../controllers/dashboardController.js';
 
 const router = express.Router();
 
-router.get('/balance', dashboardTotalBalanceAccount);
+router.get('/balance', dashboardTotalBalanceAccounts);
+router.get('/balance/type', dashboardTotalBalanceAccountByType);
 
 export default router;
