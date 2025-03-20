@@ -254,6 +254,7 @@ export const getAccountById = async (req, res, next) => {
       values: [accountId],
     });
 
+    //decidir si se queda esta opcion
     const account_type_name =
       !accountTypeName || accountTypeName == ''
         ? accountTypeNameResult.rows[0].account_type_name

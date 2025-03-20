@@ -17,7 +17,7 @@ export async function checkConnection() {
     await pool.query('SELECT 1');
     console.log(
       pc.italic(pc.yellowBright('Conexión a la base de datos verificada.'))
-    ); //Data base connection verifiedd
+    ); //Data base connection verified
   } catch (error) {
     console.error(
       pc.red('Error al verificar la conexión a la base de datos:', error)
@@ -25,7 +25,6 @@ export async function checkConnection() {
     throw error;
   }
 }
-
 // pool.on('error', (err) => {
 // console.error('Unexpected error on idle client', err);
 // Termina la aplicación si hay un error grave

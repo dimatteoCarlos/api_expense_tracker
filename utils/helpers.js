@@ -4,6 +4,7 @@ export const determineTransactionType = (
   account_type_name
 ) => {
   let transactionType = 'account-opening';
+  let counterTransactionType = 'account-opening';
 
   if (
     account_type_name !== 'debtor' &&
@@ -11,18 +12,21 @@ export const determineTransactionType = (
   ) {
     if (account_starting_amount > 0) {
       transactionType = 'deposit';
+      counterTransactionType = 'withdraw';
     }
   } else {
     if (account_type_name === 'debtor' && account_starting_amount > 0) {
       transactionType = 'lend';
+      counterTransactionType = 'borrow';
     } else if (account_starting_amount < 0) {
       transactionType = 'borrow';
+      counterTransactionType = 'lend';
     }
   }
 
-  return transactionType;
+  return {transactionType, counterTransactionType};
 };
-
+//-----------------------------------------------------------------
 // Función para convertir de dd-mm-yyyy a ISO 8601 - frontend to api
 export const formatDateToISO = (dateString) => {
   const [day, month, year] = dateString.split('-');

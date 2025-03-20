@@ -26,8 +26,7 @@ router.post('/new_account/debtor', createDebtorAccount);
 router.post('/new_account/pocket_saving', createPocketAccount);
 router.post('/new_account/category_budget', createCategoryBudgetAccount);
 //---------------------------------------------
-//get accounts by account type
-
+//tracker movements - type accounts involved
 //expense: bank and category_budget account types
 //income: bank and income_source_accounts
 //investment: investment_accounts

@@ -59,3 +59,21 @@ export const getDebtConfig = (body) => ({
   sourceAccountTransactionType: 'borrow',
   destinationAccountTransactionType: 'lend',
 });
+
+//transaction_types:
+// "transaction_type_id"	"transaction_type_name"
+// 1	"withdraw"
+// 2	"deposit"
+// 3	"lend"
+// 4	"borrow"
+// 5	"account-opening"
+
+// "movement_type_id"	"movement_type_name"
+// 1	"expense"
+// 2	"income"
+// 3	"investment"
+// 4	"debt"
+// 5	"pocket"
+// 6	"transfer"
+// 7	"receive"
+// 8	"account-opening"

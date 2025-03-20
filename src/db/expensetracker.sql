@@ -117,6 +117,26 @@ ORDER BY ua.account_balance DESC
 
 --ESTAN FALTANTDO: INCOME_SOURCE, INVESTMENT, POCKET_SAVING Y DEBTOR
 
+-- select mt.movement_type_name,  COUNT(*) from transactions tr
+-- join movement_types mt ON tr.movement_type_id = mt.movement_type_id
+-- GROUP BY mt.movement_type_id, mt.movement_type_name
+
+-- select  mt.movement_type_name,ua.account_name, SUM(tr.amount) from transactions tr
+-- join movement_types mt ON tr.movement_type_id = mt.movement_type_id
+-- join user_accounts ua ON tr.source_account_id = ua.account_id
+-- OR tr.destination_account_id = ua.account_id
+-- where tr.movement_type_id = 4
+-- GROUP BY mt.movement_type_name, ua.account_name
+
+
+-- select  mt.movement_type_name,ua.account_name, SUM(tr.amount) from transactions tr
+-- join movement_types mt ON tr.movement_type_id = mt.movement_type_id
+-- join user_accounts ua ON tr.source_account_id = ua.account_id
+-- OR tr.destination_account_id = ua.account_id
+-- -- join user_accounts ua ON tr.destination_account_id = ua.account_id
+-- -- where mt.movement_type_name = 'expense'
+-- GROUP BY mt.movement_type_name, ua.account_name
+
 -- TO GET THE RESTRICTION NAME
 SELECT constraint_name
 FROM information_schema.table_constraints

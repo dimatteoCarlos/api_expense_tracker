@@ -72,13 +72,11 @@ app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
 app.use(cookieParser());
 //initiate
 console.log('Hola Mundo');
-
 //------------------
 //Dtabase initialization.  Función para inicializar la base de datos
 async function initializeDatabase() {
   try {
     console.log(pc.cyanBright('Verificando existencia de datos en tablas ...'));
-
     // --
     // Initialize tables with catalogued field attributes
     // await tblCurrencies();
@@ -87,13 +85,13 @@ async function initializeDatabase() {
     // await tblMovementTypes();
     // await tbltransactionTypes();
     // await tblCategoryNatureTypes();
-
+//--------------------------------------------------
     //truncate tables
     if (false) {
       await Promise.allSettled(
         createMainTables.map(async (item, indx) => {
           try {
-            // await pool.query({ text: `TRUNCATE TABLE ${item.tblName} CASCADE` });
+            await pool.query({ text: `TRUNCATE TABLE ${item.tblName} CASCADE` });
             // await pool.query({ text: `DROP TABLE ${item.tblName} CASCADE` });
             console.log(indx, item.tblName, 'truncated');
           } catch (error) {
@@ -115,7 +113,6 @@ async function initializeDatabase() {
     }
 
     //create tables
-
     if (false) {
       await Promise.allSettled(
         createMainTables.map(async (item, ind) => {
@@ -143,8 +140,7 @@ async function initializeDatabase() {
         });
       });
     }
-
-    //---
+//---
     console.log(pc.greenBright('Base de datos inicializada correctamente.'));
   } catch (error) {
     console.error(
@@ -154,9 +150,7 @@ async function initializeDatabase() {
     throw error; // Relanzar el error para manejarlo en el nivel superior
   }
 }
-
 // Server starts here. Inicializar la base de datos y luego iniciar el servidor
-
 await checkConnection();
 
 await initializeDatabase()
@@ -184,9 +178,9 @@ app.use('/api/fintrack', fintrack_routes);
 //------------------
 //response to undefined routes request
 app.use('*', (req, res) => {
-  res.status(404).json({ error: '404', message: 'not found' });
+  res.status(404).json({ error: '404', message: 'Rooute link was not found' });
 });
-
+//------------------
 //message error handling
 // app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
 app.use((err, req, response, next) => {

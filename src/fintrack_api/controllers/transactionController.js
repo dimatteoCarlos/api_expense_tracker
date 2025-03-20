@@ -91,7 +91,6 @@ export const transferBetweenAccounts = async (req, res, next) => {
 
   const client = await pool.connect();
 
-
   try {
     const { user: userId, movement: movementName } = req.query;
     if (!userId) {
@@ -99,15 +98,14 @@ export const transferBetweenAccounts = async (req, res, next) => {
       console.warn(pc.magentaBright(message));
       return res.status(400).json({ status: 400, message });
     }
-
-    const checkAndInserAccount = async (req, res) => {
+    //-----------------------------------------------------------
+    const checkAndInsertAccount = async (req, res) => {
       try {
         const chekAccountResult = await pool.query(
           'SELECT * FROM user_accounts WHERE account_name = $1',
           ['slack']
         );
         if (chekAccountResult.rows.length > 0) {
-          // await pool.query()
           console.log('slack account already exists');
         } else {
           const insertResult = await pool.query(
@@ -127,6 +125,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
         // return res.status(500).json({ status: 500, message });
       }
     };
+    //-------------------------------------------
 
     if (!movementName) {
       const message = 'movement name is required';
@@ -134,7 +133,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
       return res.status(400).json({ status: 400, message });
     }
     //------------------
-    checkAndInserAccount(req, res, next, userId);
+    checkAndInsertAccount(req, res, next, userId);
     //------------------
     //--get the movement types, get the movement type id and check --------------
     const movement_typesResults = await pool.query(
@@ -328,8 +327,6 @@ export const transferBetweenAccounts = async (req, res, next) => {
       parseFloat(destinationAccountBalance) +
       numericAmount * balanceMultiplierFn(destinationAccountTransactionType);
 
-
-
     const destinationAccountId = destinationAccountInfo.account_id;
 
     const updatedDestinationAccountInfo = await updateAccountBalance(
@@ -344,9 +341,9 @@ export const transferBetweenAccounts = async (req, res, next) => {
     //   typeof destinationAccountBalance
     // );
 
-    //----Register trasnfer/receive transaction-----------------
+    //----Register transfer/receive transaction-----------------
     //-----------source transaction-----------------------------
-    const transactionDescription = `${note}.Transaction: ${sourceAccountTransactionType}. Transfered ${currencyCode} ${numericAmount} from account "${sourceAccountName}" of type: "${sourceAccountTypeName}" account, to "${destinationAccountName}" of type ${destinationAccountTypeName}.${transactionActualDate.toLocaleString()}`;
+    const transactionDescription = `${note}.Transaction: ${sourceAccountTransactionType}. Transfered ${currencyCode} ${numericAmount} from account "${sourceAccountName}" of type: "${sourceAccountTypeName}", to "${destinationAccountName}" of type ${destinationAccountTypeName}.${transactionActualDate.toLocaleString()}`;
     //revisar formato de fecha
 
     // console.log(
@@ -365,13 +362,14 @@ export const transferBetweenAccounts = async (req, res, next) => {
       userId,
       description: transactionDescription,
       movement_type_id,
-      transaction_type_id: sourceTransactionTypeId, //deposit or lend
+      transaction_type_id: sourceTransactionTypeId, //withdraw or lend
       status: 'complete',
       amount: numericAmount * balanceMultiplierFn(sourceAccountTransactionType), //
       currency_id: currencyIdReq,
       source_account_id: sourceAccountId,
       destination_account_id: destinationAccountId,
       transaction_actual_date,
+      account_id: sourceAccountId,
     };
 
     await recordTransaction(sourceTransactionOption);
@@ -454,8 +452,7 @@ export const transferBetweenAccounts = async (req, res, next) => {
 
     const message = 'Transaction successfully completed.';
     console.log(pc.magentaBright(message));
-   return  res.status(200).json({ status: 200, message, data });
-
+    return res.status(200).json({ status: 200, message, data });
   } catch (error) {
     await client.query('ROLLBACK');
     // const { code, message } = handlePostgresError(error);

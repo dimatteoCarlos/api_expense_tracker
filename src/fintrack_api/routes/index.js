@@ -8,7 +8,7 @@ import dashboardRoutes from './dashboardRoutes.js'
 const router = express.Router();
 
 router.use('/type',typeListRoutes)
-router.use('/account',accountRoutes)
+router.use('/account',accountRoutes) //create and read(get) accounts
 router.use('/transaction', transactionRoutes)
 router.use('/dashboard', dashboardRoutes)
 
