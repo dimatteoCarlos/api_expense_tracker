@@ -9,7 +9,7 @@ export function prepareTransactionOption(
   return {
     userId: accountInfo.user_id,
     description: accountInfo.description,
-    transaction_type_id: accountInfo.transaction_type_id, //METER TAMBIEN TTNAME MODIFICAR TABLA
+    transaction_type_id: accountInfo.transaction_type_id, 
     amount: accountInfo.amount, //initial balance
     currency_id: accountInfo.currency_id,
     account_id: accountInfo.account_id,
@@ -17,6 +17,6 @@ export function prepareTransactionOption(
     destination_account_id,
     movement_type_id,
     status: 'complete',
-    transaction_actual_date: accountInfo.transaction_actual_date
+    transaction_actual_date: accountInfo.transaction_actual_date,
   };
 }

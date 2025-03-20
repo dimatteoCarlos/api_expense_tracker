@@ -6,6 +6,10 @@ export const determineTransactionType = (
   let transactionType = 'account-opening';
   let counterTransactionType = 'account-opening';
 
+  if (account_type_name === 'category_budget') {
+    return { transactionType, counterTransactionType };
+  }
+
   if (
     account_type_name !== 'debtor' &&
     account_type_name !== 'category_budget'

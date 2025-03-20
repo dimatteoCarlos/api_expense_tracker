@@ -6,6 +6,10 @@ export const determineTransactionType = (
   let transactionType = 'account-opening';
   let counterTransactionType = 'account-opening';
 
+  if (account_type_name === 'category_budget') {
+    return { transactionType, counterTransactionType };
+  }
+
   if (
     account_type_name !== 'debtor' &&
     account_type_name !== 'category_budget'
@@ -24,8 +28,52 @@ export const determineTransactionType = (
     }
   }
 
-  return {transactionType, counterTransactionType};
+  return { transactionType, counterTransactionType };
 };
+//-----------------------------------------------------------------
+// Helper function to validate required fields
+export function validateRequiredFields(fields, res) {
+  const missingFields = Object.entries(fields)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+
+  if (missingFields.length > 0) {
+    const message = `Missing required fields: ${missingFields.join(', ')}`;
+    console.warn(pc.blueBright(message));
+    return res.status(400).json({ status: 400, message });
+  }
+  return null;
+}
+//---
+// Helper function to get account type ID
+export async function getAccountTypeId(accountTypeName) {
+  const accountTypeQuery = `SELECT * FROM account_types`;
+  const accountTypeResult = await pool.query(accountTypeQuery);
+  const accountType = accountTypeResult.rows.find(
+    (type) => type.account_type_name === accountTypeName.trim()
+  );
+  return accountType?.account_type_id;
+}
+//---
+// Helper function to get currency ID
+export async function getCurrencyId(currencyCode) {
+  const currencyQuery = `SELECT * FROM currencies`;
+  const currencyResult = await pool.query(currencyQuery);
+  const currency = currencyResult.rows.find(
+    (curr) => curr.currency_code === currencyCode
+  );
+  return currency?.currency_id;
+}
+// Helper function to handle transaction recording
+export async function handleTransactionRecording(
+  transactionOption,
+  isAccountOpening
+) {
+  if (!isAccountOpening) {
+    return await recordTransaction(transactionOption);
+  }
+  return {};
+}
 //-----------------------------------------------------------------
 // Función para convertir de dd-mm-yyyy a ISO 8601 - frontend to api
 export const formatDateToISO = (dateString) => {
