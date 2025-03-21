@@ -1,34 +1,72 @@
 //determine transaction type from sign of amount and account_type_name.
+//applicable to account creation movements
+
+//this function consideres category_budget_account with various transaction types.
 export const determineTransactionType = (
-  account_starting_amount,
+  transaction_amount,
   account_type_name
 ) => {
   let transactionType = 'account-opening';
   let counterTransactionType = 'account-opening';
 
-  if (account_type_name === 'category_budget') {
+  if (transaction_amount === 0) {
     return { transactionType, counterTransactionType };
   }
 
-  if (
-    account_type_name !== 'debtor' &&
-    account_type_name !== 'category_budget'
-  ) {
-    if (account_starting_amount > 0) {
+  if (account_type_name !== 'debtor') {
+    if (transaction_amount > 0) {
       transactionType = 'deposit';
       counterTransactionType = 'withdraw';
+    } else {
+      //case yet to be identified
+      transactionType = 'withdraw';
+      counterTransactionType = 'deposit';
     }
   } else {
-    if (account_type_name === 'debtor' && account_starting_amount > 0) {
+    //debtor account
+    if (account_type_name === 'debtor' && transaction_amount > 0) {
       transactionType = 'lend';
       counterTransactionType = 'borrow';
-    } else if (account_starting_amount < 0) {
+    } else if (transaction_amount < 0) {
       transactionType = 'borrow';
       counterTransactionType = 'lend';
     }
   }
-
   return { transactionType, counterTransactionType };
+};
+//-----------------------------------------------------------------
+//this function consideres category_budget_account as account-opening transaction type only
+export const determineTransactionType_v1 = (
+  transaction_amount,
+  account_type_name
+) => {
+  const TRANSACTION_TYPES = {
+    OPENING: 'account-opening',
+    DEPOSIT: 'deposit',
+    WITHDRAW: 'withdraw',
+    LEND: 'lend',
+    BORROW: 'borrow',
+  };
+
+  const { OPENING, DEPOSIT, WITHDRAW, LEND, BORROW } = TRANSACTION_TYPES;
+
+  if (account_type_name === 'category_budget' || transaction_amount === 0) {
+    return { transactionType: OPENING, counterTransactionType: OPENING };
+  }
+
+  if (account_type_name === 'debtor') {
+    if (transaction_amount > 0) {
+      return { transactionType: LEND, counterTransactionType: BORROW };
+    } else {
+      return { transactionType: BORROW, counterTransactionType: LEND };
+    }
+  }
+
+  if (transaction_amount > 0) {
+    return { transactionType: DEPOSIT, counterTransactionType: WITHDRAW };
+  } else {
+    return { transactionType: WITHDRAW, counterTransactionType: DEPOSIT };
+  }
 };
 //-----------------------------------------------------------------
 // Helper function to validate required fields
@@ -177,11 +215,9 @@ export function getMonthName(index) {
   return monthName;
   // console.log(monthName);
 }
-
 //---------------
 export function numberToWords(num) {
   if (num === 0) return 'Zero';
-
   const units = [
     '',
     'One',
@@ -259,7 +295,6 @@ export function numberToWords(num) {
   if (num > 0) {
     result += convertChunk(num);
   }
-
   return result.trim();
 }
 

@@ -6,8 +6,9 @@ export function determineSourceAndDestinationAccounts(
 ) {
   let destination_account_id = newAccountInfo.account_id;
   let source_account_id = newAccountInfo.account_id;
+
   const isAccountOpening =
-    newAccountInfo.transaction_type_name === 'account-opening';
+    newAccountInfo.transaction_type_name === 'account-opening'; //transaction amount = 0
 
   if (!isAccountOpening) {
     destination_account_id =

@@ -4,7 +4,7 @@ import {
   createBasicAccount,
   createDebtorAccount,
   createPocketAccount,
-  createCategoryBudgetAccount,
+  // createCategoryBudgetAccount,
 } from '../controllers/accountCreationController.js';
 
 import {
@@ -12,6 +12,7 @@ import {
   getAccountByType,
   getAccountById,
 } from '../controllers/getAccountController.js';
+import { createCategoryBudgetAccount } from '../controllers/accountCategoryCreationcontroller.js';
 
 // const select = true;
 // import { verifyHeaderAuth, verifyUser } from '../middlewares/authMiddleware.js';
