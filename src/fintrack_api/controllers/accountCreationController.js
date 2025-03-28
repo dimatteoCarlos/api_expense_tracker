@@ -13,7 +13,7 @@ import { verifyAccountExistence } from '../../../utils/verifyAccountExistence.js
 import { updateAccountBalance } from '../../../utils/updateAccountBalance.js';
 import { insertAccount } from '../../../utils/insertAccount.js';
 import { getTransactionTypeId } from '../../../utils/getTransactionTypeId.js';
-import { determineSourceAndDestinationAccounts } from './determineSourceAndDestinationAccounts.js';
+import { determineSourceAndDestinationAccounts } from '../../../utils/determineSourceAndDestinationAccounts.js';
 import { prepareTransactionOption } from '../../../utils/prepareTransactionOption.js';
 //import { validateAndNormalizeDate } from '../../../utils/helpers.js';
 //-------------------------------------------------------------
@@ -946,6 +946,8 @@ export const createPocketAccount = async (req, res, next) => {
 //-------------------------------------------------------------------
 //POST: http://localhost:5000/api/fintrack/account/new_account/category_budget?user=6e0ba475-bf23-4e1b-a125-3a8f0b3d352c
 export const createCategoryBudgetAccount = async (req, res, next) => {
+  //This version does not consider using a counter slack account, it only consider opening account type transaction for category budget accounts.
+
   //basic_account_data:
   // userId,account_type_name,currency_code,amount,account_start_date,account_starting_amount,
   //account type: category_budget.
@@ -1185,12 +1187,6 @@ export const createCategoryBudgetAccount = async (req, res, next) => {
           transaction_info: recordTransactionInfo,
           transaction_type_name: newAccountInfo.transaction_type_name,
         },
-        // counter_account_data: {
-        //   account_name: counterTransactionInfo.account_name,
-        //   transaction_data: counterTransactionOption,
-        //   transaction_info: counterTransactionInfo,
-        //   transaction_type_name: counterTransactionInfo.transaction_type_name,
-        // },
       },
       message,
     });

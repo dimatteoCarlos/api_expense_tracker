@@ -1,16 +1,16 @@
-import dotenv from 'dotenv';
 import pg from 'pg';
 import pc from 'picocolors';
+import dotenv from 'dotenv';
 dotenv.config();
 
 const uri = {
   connectionString: process.env.DATABASE_URI,
-  ssl: { rejectUnauthorized: false }, //Esto es vital
+  ssl: { rejectUnauthorized: false }, //Never use this in production. alternative: mkcert
   connectionTimeoutMillis: 10000, // Tiempo de espera para la conexión (5 segundos)
   idleTimeoutMillis: 30000, // Tiempo de espera para conexiones inactivas (30 segundos)
 };
 
-export const pool = new pg.Pool(uri); // Pool espera un objeto
+export const pool = new pg.Pool(uri); // Ojo, Pool espera un objeto
 
 export async function checkConnection() {
   try {

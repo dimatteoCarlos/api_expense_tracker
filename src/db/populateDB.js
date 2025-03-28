@@ -137,7 +137,10 @@ export async function tblUserRoles() {
       const queryText = `INSERT INTO user_roles(user_role_id, user_role_name) VALUES ($1,$2)`;
       const values = [role.user_role_id, role.user_role_name];
       await pool.query(queryText, values);
-      console.log(pc.green('inserted: user_role'), pc.green( role.user_role_name));
+      console.log(
+        pc.green('inserted: user_role'),
+        pc.green(role.user_role_name)
+      );
     }
 
     //confirm transaction
@@ -347,11 +350,11 @@ export async function tbltransactionTypes() {
     { transaction_type_id: 2, transaction_type_name: 'deposit' },
     { transaction_type_id: 3, transaction_type_name: 'lend' },
     { transaction_type_id: 4, transaction_type_name: 'borrow' },
-    { transaction_type_id: 5, transaction_type_name:  'account-opening'},
+    { transaction_type_id: 5, transaction_type_name: 'account-opening' },
   ];
 
   const tblName = 'transaction_types';
-  const minCount = transactionTypeValues.length ;
+  const minCount = transactionTypeValues.length;
 
   try {
     //verify if table exists

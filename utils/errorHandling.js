@@ -4,7 +4,7 @@ export function createError(statusCode, message) {
   const err = new Error();
   err.status = statusCode;
   err.message = message;
-  console.log(pc.red('Running create error fn'));
+  console.log(pc.red('Running create error fn', statusCode, message));
   return { status: err.status, message: err.message };
 }
 

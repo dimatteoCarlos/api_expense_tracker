@@ -29,6 +29,11 @@ export const getAccountTypeId = async (accountTypeName) => {
     text: accountTypeQuery,
     values: [accountTypeName],
   });
+
+  console.log(
+    'desdeGetcurrencyById',
+    accountTypeResult.rows[0]?.account_type_id
+  );
   return accountTypeResult.rows[0]?.account_type_id;
 };
 
@@ -291,8 +296,8 @@ export const transferBetweenAccounts = async (req, res, next) => {
       const message = `Not enough funds to transfer (${currencyCode} ${numericAmount} from account ${sourceAccountName} (${currencyCode} ${sourceAccountBalance})`;
       console.warn(pc.magentaBright(message));
 
-      //overdraft not allowed: bank-category_budget, bank-investment, bank-debtor , others: investment-investment, bank - bank,
-      //overdraft allowed: all-slack-all, income_source-all, debtor-debtor,  bank-debtor-bank,all-debtor-all
+      //overdraft not allowed: bank to category_budget, bank to investment, bank to debtor , others: investment to investment, bank to bank,
+      //overdraft allowed: slack to any account, income_source to any account, debtor to debtor,  bank to debtor/ debtor to bank, any to debtor/ debtor to any ac
     }
     //===================================
     //pg transaction to insert data in user_accounts

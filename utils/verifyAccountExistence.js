@@ -5,7 +5,7 @@ import { pool } from '../src/db/configDB.js';
 export const verifyAccountExistence = async (
   userId,
   account_name,
-  account_type_name='bank'
+  account_type_name = 'bank'
 ) => {
   const accountExistQuery = {
     text: `SELECT 1 FROM user_accounts ua

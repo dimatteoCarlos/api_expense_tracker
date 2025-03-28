@@ -6,8 +6,6 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { pool, checkConnection } from './db/configDB.js';
-import routes from './routes/index.js';
-import fintrack_routes from './fintrack_api/routes/index.js';
 import {
   tblAccountTypes,
   tblCategoryNatureTypes,
@@ -18,6 +16,11 @@ import {
 } from './db/populateDB.js';
 import pc from 'picocolors';
 import { createMainTables } from './db/createTables.js';
+import routes from './routes/index.js';
+import fintrack_routes from './fintrack_api/routes/index.js';
+
+// import passport from 'passport';
+// import './config/passport.js';
 
 dotenv.config();
 // interface CustomError extends Error {status?:number}
@@ -42,7 +45,7 @@ const PORT = parseInt(process.env.PORT ?? '5000');
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true })); //
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -70,10 +73,28 @@ app.use(
 //allow cross origin sharing request
 app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
 app.use(cookieParser());
-//initiate
+// Inicializa el middleware de Passport en la aplicación Express.Operaciones que realiza:
+// Prepara el sistema de autenticación para su uso
+// Añade los métodos de Passport al objeto req (como req.login(), req.logout())
+//Establece las bases para el manejo de estrategias de autenticación
+// app.use(passport.initialize());
+
+//------------------
+//Middleware route handling or routes configuration
+app.use('/api', routes);
+app.use('/api/fintrack', fintrack_routes);
+//------------------
+//response to undefined route request
+app.use('*', (req, res) => {
+  res.status(404).json({ error: '404', message: 'Rooute link was not found' });
+});
+
+//------------------
+
+//Initiate
 console.log('Hola Mundo');
 //------------------
-//Dtabase initialization.  Función para inicializar la base de datos
+//Database initialization.  Función para inicializar la base de datos
 async function initializeDatabase() {
   try {
     console.log(pc.cyanBright('Verificando existencia de datos en tablas ...'));
@@ -91,8 +112,8 @@ async function initializeDatabase() {
       await Promise.allSettled(
         createMainTables.map(async (item, indx) => {
           try {
-            await pool.query({ text: `TRUNCATE TABLE ${item.tblName} CASCADE` });
-            // await pool.query({ text: `DROP TABLE ${item.tblName} CASCADE` });
+            //await pool.query({ text: `TRUNCATE TABLE ${item.tblName} CASCADE` });
+            await pool.query({ text: `DROP TABLE ${item.tblName} CASCADE` });
             console.log(indx, item.tblName, 'truncated');
           } catch (error) {
             console.error('error truncating the table', `${item.tblName}`);
@@ -111,7 +132,6 @@ async function initializeDatabase() {
         }
       });
     }
-
     //create tables
     if (false) {
       await Promise.allSettled(
@@ -128,9 +148,9 @@ async function initializeDatabase() {
       ).then((results) => {
         results.forEach((result, indx) => {
           if (result.status === 'fulfilled') {
-            // console.log(
-            //   // `Table ${createMainTables[indx].tblName} was successfully created .`
-            // );
+            console.log(
+              `Table ${createMainTables[indx].tblName} was successfully created .`
+            );
           } else if (result.status === 'rejected') {
             console.error(
               `Table ${createMainTables[indx].tblName} failed to create:`,
@@ -170,17 +190,7 @@ pool.on('error', (err) => {
   // Termina la aplicación si hay un error grave
   // process.exit(-1);
 });
-//------------------
-//Middleware route handling
-app.use('/api', routes);
-app.use('/api/fintrack', fintrack_routes);
-
-//------------------
-//response to undefined routes request
-app.use('*', (req, res) => {
-  res.status(404).json({ error: '404', message: 'Rooute link was not found' });
-});
-//------------------
+//----------------------
 //message error handling
 // app.use((err: CustomError, req: Request, res: Response, next: NextFunction) => {
 app.use((err, req, response, next) => {
@@ -203,3 +213,5 @@ process.on('SIGINT', () => {
     // process.exitCode=0;
   });
 });
+
+

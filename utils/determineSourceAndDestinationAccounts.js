@@ -1,5 +1,5 @@
 
-//Function to determine source and destination accounts id as a function of transaction types
+//Function to determine source and destination accounts id as a function of transaction type name in transaction_types
 export function determineSourceAndDestinationAccounts(
   newAccountInfo,
   counterAccountInfo

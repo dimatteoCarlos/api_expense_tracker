@@ -29,7 +29,7 @@ export const verifyToken = async (req, res, next) => {
   if (!token) {
     console.error('Error when verifying token');
     return next(
-      createError(401, 'Access Unauthenticated. Please log in again')
+      createError(401, 'Access Unauthenticated. No token provided. Please log in again')
     );
   }
 

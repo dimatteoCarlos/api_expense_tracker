@@ -3,7 +3,10 @@
 //addMoneyToAccount
 //deleteAccount / not yet done
 
-import { validateAndNormalizeDate } from '../../utils/helpers.js';
+import {
+  getCurrencyId,
+  validateAndNormalizeDate,
+} from '../../utils/helpers.js';
 import { pool } from '../db/configDB.js';
 import {
   createError,
@@ -401,21 +404,21 @@ export const addMoneyToAccount = async (req, res, next) => {
     //currency and account type ids handling (since theses are chosen from a select on the browser frontend, existence should be warranted)
 
     //---check currency existence---------------
-    const currencyIdResult = await pool.query({
-      text: `SELECT currency_id FROM currencies WHERE currency_code = $1`,
-      values: [currencyCode],
-    });
+    // const currencyIdResult = await pool.query({
+    //   text: `SELECT currency_id FROM currencies WHERE currency_code = $1`,
+    //   values: [currencyCode],
+    // });
 
-    if (currencyIdResult.rows.length === 0) {
-      const message = `Currency with code ${currencyCode} was not found.`;
-      console.warn(pc.yellowBright(message));
-      return res.status(404).json({ status: 404, message });
-    }
+    // if (currencyIdResult.rows.length === 0) {
+    //   const message = `Currency with code ${currencyCode} was not found.`;
+    //   console.warn(pc.yellowBright(message));
+    //   return res.status(404).json({ status: 404, message });
+    // }
 
-    const currencyId = currencyIdResult.rows[0].currency_id;
+    // const currencyId = currencyIdResult.rows[0].currency_id;
 
+    const currencyId = getCurrencyId(currencyCode);
     console.log('🚀 ~ createAccount ~ currencyId:', currencyId);
-
     //--------account checking existence
     //account id must be provided by the frontend in the request
     //search for existent OF user_accounts by userId and account name

@@ -13,10 +13,10 @@ import { verifyAccountExistence } from '../../../utils/verifyAccountExistence.js
 import { updateAccountBalance } from '../../../utils/updateAccountBalance.js';
 import { insertAccount } from '../../../utils/insertAccount.js';
 import { getTransactionTypeId } from '../../../utils/getTransactionTypeId.js';
-import { determineSourceAndDestinationAccounts } from './determineSourceAndDestinationAccounts.js';
+import { determineSourceAndDestinationAccounts } from '../../../utils/determineSourceAndDestinationAccounts.js';
 import { prepareTransactionOption } from '../../../utils/prepareTransactionOption.js';
 //import { validateAndNormalizeDate } from '../../../utils/helpers.js';
-//-------------------------------------------------------------
+//------------------------------------------------------------------
 //-------------------------------------------------------------------
 //endpoint: POST: http://localhost:5000/api/fintrack/account/new_account/category_budget?user=6e0ba475-bf23-4e1b-a125-3a8f0b3d352c
 export const createCategoryBudgetAccount = async (req, res, next) => {

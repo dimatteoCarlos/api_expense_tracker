@@ -2,13 +2,15 @@ import { createToken, hashed, isRight } from '../../utils/authFn.js';
 import { createError } from '../../utils/errorHandling.js';
 import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../db/configDB.js';
-import pc from 'picocolors'
+import pc from 'picocolors';
+import { getCurrencyId } from '../fintrack_api/controllers/transactionController.js';
 
 //--sign-up or register
 export const signUpUser = async (req, res, next) => {
   console.log('sign-up entered');
   try {
-    const { username, user_firstname, user_lastname, email } = req.body;
+    const { username, user_firstname, user_lastname, email, currency } =
+      req.body;
     // console.log(req.body);
     if (
       !(
@@ -19,9 +21,10 @@ export const signUpUser = async (req, res, next) => {
         user_lastname
       )
     ) {
-      return next(createError(404, 'all fields must be provided'));
+      return next(createError(404, 'username, email, password, first name and lastname, all fields must be provided. Currency usd will be default value if not provided'));
     }
 
+    //de manera estricta la condicion deberia ser por: username AND email, o por google_id
     const userExists = await pool.query({
       text: `SELECT EXISTS (SELECT 1 FROM users WHERE username=$1 OR email = $2)`,
       values: [username, email],
@@ -42,11 +45,16 @@ export const signUpUser = async (req, res, next) => {
     req.body.password = undefined;
 
     const newUserId = uuidv4();
+
+    const currencyId = !currency ? 1 : await getCurrencyId(currency);
+    console.log('🚀 ~ signUpUser ~ currencyId:', currencyId);
+
     // console.log('hashedPwd:', hashedPassword.length);
     // console.log('testUUID:', newUserId);
 
+    //consider adding: google_id, display_name
     const userData = await pool.query({
-      text: `INSERT INTO users(user_id, username,email,password_hashed,user_firstname,user_lastname ) VALUES ($1, $2, $3,$4,$5, $6) RETURNING user_id, username, email, user_firstname, user_lastname;`,
+      text: `INSERT INTO users(user_id, username,email,password_hashed,user_firstname,user_lastname, currency_id) VALUES ($1, $2, $3,$4,$5, $6, $7) RETURNING user_id, username, email, user_firstname, user_lastname, currency_id;`,
       values: [
         newUserId,
         username,
@@ -54,6 +62,7 @@ export const signUpUser = async (req, res, next) => {
         hashedPassword,
         user_firstname,
         user_lastname,
+        currencyId,
       ],
     });
     // console.log('pwd:', userData.rows);
@@ -61,8 +70,8 @@ export const signUpUser = async (req, res, next) => {
 
     res.status(201).json({
       status: 201,
-      message: `User account created successfully. Username: ${username} email: ${email}`,
-      user: userData.rows[0], //que hay aqui
+      message: `User successfully suscribed. Username: ${username} email: ${email}`,
+      user: userData.rows[0], //an object with info
     });
   } catch (error) {
     console.log(pc.red('auth error:', error));
@@ -128,7 +137,6 @@ export const signInUser = async (req, res, next) => {
       username,
       email,
       userData[0].user_id
-
       // req.body.password,
       // userData[0].password_hashed
     );

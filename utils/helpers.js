@@ -1,7 +1,7 @@
 //determine transaction type from sign of amount and account_type_name.
 //applicable to account creation movements
 
-//this function consideres category_budget_account with various transaction types.
+//this function considers category_budget_account with various transaction types possible.
 export const determineTransactionType = (
   transaction_amount,
   account_type_name
@@ -35,7 +35,7 @@ export const determineTransactionType = (
   return { transactionType, counterTransactionType };
 };
 //-----------------------------------------------------------------
-//this function consideres category_budget_account as account-opening transaction type only
+//this function considers category_budget_account as account-opening transaction type only
 export const determineTransactionType_v1 = (
   transaction_amount,
   account_type_name
@@ -93,15 +93,35 @@ export async function getAccountTypeId(accountTypeName) {
   return accountType?.account_type_id;
 }
 //---
-// Helper function to get currency ID
+//--- check currency existence and get currency_id ------------
 export async function getCurrencyId(currencyCode) {
-  const currencyQuery = `SELECT * FROM currencies`;
-  const currencyResult = await pool.query(currencyQuery);
-  const currency = currencyResult.rows.find(
+  console.log('running:', 'getCurrencyId')
+  const currencyIdResult = await pool.query({
+    text: `SELECT currency_id FROM currencies WHERE currency_code = $1`,
+    values: [currencyCode],
+  });
+
+  if (currencyIdResult.rows.length === 0) {
+    const message = `Currency with code ${currencyCode} does not exist as catalogued.`;
+    console.warn(pc.yellowBright(message));
+    return res.status(404).json({ status: 404, message });
+  }
+
+  const currencyId = currencyIdResult.rows[0].currency_id;
+
+  console.log('🚀 ~ helpers ~ currencyId:', currencyId);
+}
+
+// Helper function to get currency ID
+export async function filterCurrencyId(currencyTable, currencyCode) {
+  // const currencyQuery = `SELECT * FROM currencies`;
+  // const currencyResult = await pool.query(currencyQuery);
+  const currency = currencyTable.find(
     (curr) => curr.currency_code === currencyCode
   );
   return currency?.currency_id;
 }
+
 // Helper function to handle transaction recording
 export async function handleTransactionRecording(
   transactionOption,
